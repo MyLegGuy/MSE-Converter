@@ -104,8 +104,8 @@ namespace Petals{
 		void WriteSECommand(BinaryWriter bw, string _filename){
 			bw.GoodWriteString(String.Format("PlaySE({0});\n",MakeStringArgument(_filename)));
 		}
-		void WriteShowBustCommand(BinaryWriter bw, string _filename){
-			bw.GoodWriteString(String.Format("ShowBust({0});\n",MakeStringArgument(_filename)));
+		void WriteShowBustCommand(BinaryWriter bw, string _filename, byte _passedPositionByte){
+			bw.GoodWriteString(String.Format("ShowBust({0},{1});\n",MakeStringArgument(_filename),"0x"+_passedPositionByte.ToString("X")));
 		}
 		void WriteShowBackgroundCommand(BinaryWriter bw, string _filename){
 			bw.GoodWriteString(String.Format("ShowBackground({0});\n",MakeStringArgument(_filename)));
@@ -125,7 +125,12 @@ namespace Petals{
 		01 - DIalouge?
 		66 - CG?
 		*/
-		void WriteCommand(BinaryWriter bw,string _readString, byte _specialByte){
+		void WriteCommand(BinaryWriter bw, BinaryReader br, string _readString, byte _specialByte){
+			// I think this is the special byte for the filters.
+			if (_specialByte==0xE4){
+				return;
+			}
+			
 			if (!ContainsIlligalCharacters(_readString)){
 				if (IsCertianFileType(Options.extractedVoiceLocation,_readString,".ogg")){
 					WriteVoiceCommand(bw,_readString);
@@ -139,7 +144,14 @@ namespace Petals{
 						WriteShowBackgroundCommand(bw,_readString);
 					}else if (_specialByte==0x67){
 						// Definetly a bust
-						WriteShowBustCommand(bw,_readString);
+						// Read the bust position byte.
+						br.BaseStream.Position+=9;
+						byte _readPositionByte=br.ReadByte();
+						// Is DAMMY, we don't need it.
+						if (_readPositionByte==0xEC){
+							return;
+						}
+						WriteShowBustCommand(bw,_readString,_readPositionByte);
 					}else{
 						// Unknown
 						Console.Out.WriteLine("Unknown image type.");
@@ -173,7 +185,7 @@ namespace Petals{
 						}catch(Exception){
 							_readSpecialByte=0;
 						}
-						WriteCommand(bw,System.Text.Encoding.ASCII.GetString(_readString),_readSpecialByte);
+						WriteCommand(bw,br,System.Text.Encoding.ASCII.GetString(_readString),_readSpecialByte);
 					}
 				}
 				
