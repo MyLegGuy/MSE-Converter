@@ -104,6 +104,17 @@ namespace Petals{
 		void WriteSECommand(BinaryWriter bw, string _filename){
 			bw.GoodWriteString(String.Format("PlaySE({0});\n",MakeStringArgument(_filename)));
 		}
+		void WriteShowBustForecast(BinaryWriter bw, List<Tuple<string, byte>> _passedBustCommandList){
+			bw.GoodWriteString("ShowBustForecast({");
+			int i;
+			for (i=0;i<_passedBustCommandList.Count;i++){
+				if (i!=0){
+					bw.GoodWriteString(",");
+				}
+				bw.GoodWriteString("0x"+_passedBustCommandList[i].Item2.ToString("X"));
+			}
+			bw.GoodWriteString("});\n");
+		}
 		void WriteShowBustCommand(BinaryWriter bw, string _filename, byte _passedPositionByte){
 			bw.GoodWriteString(String.Format("ShowBust({0},{1});\n",MakeStringArgument(_filename),"0x"+_passedPositionByte.ToString("X")));
 		}
@@ -114,7 +125,6 @@ namespace Petals{
 			bw.GoodWriteString(String.Format("PlayBGM({0});\n",MakeStringArgument(_filename)));
 		}
 		
-		// TODO - Special byte research
 		/*	
 		d0 - sound?
 		Da - sound?
@@ -125,20 +135,25 @@ namespace Petals{
 		01 - DIalouge?
 		66 - CG?
 		*/
-		void WriteCommand(BinaryWriter bw, BinaryReader br, string _readString, byte _specialByte){
+		void WriteCommand(BinaryWriter bw, BinaryReader br, string _readString, byte _specialByte, List<Tuple<string, byte>> _passedBustCommandList){
 			// I think this is the special byte for the filters.
 			if (_specialByte==0xE4){
 				return;
 			}
+			if (_specialByte==0xEE){ // GS_EN_NS
+				return;
+			}
+			if (_specialByte==0x65){ // GS_HI_NS
+				return;
+			}
+			
+			if (_specialByte==0x03){
+				WriteDialougeCommand(bw,"CHOICE COMMAND? HERE!","");
+				return;
+			}
 			
 			if (!ContainsIlligalCharacters(_readString)){
-				if (IsCertianFileType(Options.extractedVoiceLocation,_readString,".ogg")){
-					WriteVoiceCommand(bw,_readString);
-					return;
-				}else if (IsCertianFileType(Options.extractedBGMLocation,_readString,".ogg")){
-					WritePlayBGMCommand(bw,_readString);
-					return;
-				}else if (IsCertianFileType(Options.extractedImagesLocation,_readString,".png")){
+				if (IsCertianFileType(Options.extractedImagesLocation,_readString,".png")){
 					if (_specialByte==0x66){
 						// Definetly a CG or background
 						WriteShowBackgroundCommand(bw,_readString);
@@ -151,19 +166,58 @@ namespace Petals{
 						if (_readPositionByte==0xEC){
 							return;
 						}
-						WriteShowBustCommand(bw,_readString,_readPositionByte);
-					}else{
+						
+						// CU01, CU02, CU03 all have position byte 00
+						// CB far left
+						// C8 middle
+						// CE far right
+						if (!(_readPositionByte==0xCB || _readPositionByte==0xC8 || _readPositionByte==0xCE || _readPositionByte==0x00)){ 
+							Console.Out.WriteLine("===Unknown position byte===");
+							Console.Out.WriteLine(_readPositionByte.ToString("X"));
+							Console.Out.WriteLine(_readString);
+						}
+						
+						_passedBustCommandList.Add(new Tuple<string, byte>(_readString,_readPositionByte));
+					}else{ // Unknown
 						// Unknown
-						Console.Out.WriteLine("Unknown image type.");
+						br.BaseStream.Position+=9;
+						byte _tempReadPositionByte = br.ReadByte();
+						
+						Console.Out.WriteLine("===Unknown image type.===");
+						Console.Out.WriteLine("Special byte: 0x"+_specialByte.ToString("X"));
+						Console.Out.WriteLine("Position byte: 0x"+_tempReadPositionByte.ToString("X"));
+						Console.Out.WriteLine("Filename: "+_readString);
+						WriteDialougeCommand(bw,"Special byte: 0x" +_specialByte.ToString("X")+"  Position byte: 0x"+_tempReadPositionByte.ToString("X")+"   Filename: "+_readString,"NAME_ERROR");
 						WriteShowBackgroundCommand(bw,_readString);
 					}
 					return;
-				}else if (IsCertianFileType(Options.extractedSELocation,_readString,".ogg")){
-					WriteSECommand(bw,_readString);
-					return;
+				}else{
+					WriteBustCommandList(bw,_passedBustCommandList);
+					if (IsCertianFileType(Options.extractedVoiceLocation,_readString,".ogg")){
+						WriteVoiceCommand(bw,_readString);
+						return;
+					}else if (IsCertianFileType(Options.extractedBGMLocation,_readString,".ogg")){
+						WritePlayBGMCommand(bw,_readString);
+						return;
+					}else if (IsCertianFileType(Options.extractedSELocation,_readString,".ogg")){
+						WriteSECommand(bw,_readString);
+						return;
+					}
 				}
 			}
 			WriteDialougeCommand(bw,_readString,"");
+		}
+		
+		public void WriteBustCommandList(BinaryWriter bw, List<Tuple<string, byte>> _passedBustCommandList){
+			if (_passedBustCommandList.Count==0){
+				return;
+			}
+			WriteShowBustForecast(bw,_passedBustCommandList);
+			int i;
+			for (i=0;i<_passedBustCommandList.Count;i++){
+				WriteShowBustCommand(bw,_passedBustCommandList[i].Item1,_passedBustCommandList[i].Item2);
+			}
+			_passedBustCommandList.Clear();
 		}
 		
 		public void ConvertScript(string _passedFilename, string _passedOutputFilename){
@@ -172,20 +226,22 @@ namespace Petals{
 			BinaryReader br = new BinaryReader(new FileStream(_passedFilename,FileMode.Open));
 			bw.GoodWriteString(("function main()\n"));
 			
+			List<Tuple<string, byte>> upcomingBustDisplayCommands = new List<Tuple<string, byte>>();
+			
 			while (br.BaseStream.Position != br.BaseStream.Length){
 				byte _lastReadByte;
 				_lastReadByte = br.ReadByte();
 				if (_lastReadByte==0x03){
 					byte[] _readString = ReadNullTerminatedString(br);
 					if (_readString!=null){
-						Console.Out.WriteLine(System.Text.Encoding.Default.GetString(_readString));
+						//Console.Out.WriteLine(System.Text.Encoding.Default.GetString(_readString));
 						byte _readSpecialByte;
 						try{
 							_readSpecialByte=br.ReadByte();
 						}catch(Exception){
 							_readSpecialByte=0;
 						}
-						WriteCommand(bw,br,System.Text.Encoding.ASCII.GetString(_readString),_readSpecialByte);
+						WriteCommand(bw,br,System.Text.Encoding.ASCII.GetString(_readString),_readSpecialByte,upcomingBustDisplayCommands);
 					}
 				}
 				

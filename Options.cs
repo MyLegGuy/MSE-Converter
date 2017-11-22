@@ -16,5 +16,6 @@ namespace Petals
 		public const string extractedVoiceLocation = "./ExtractedVoice/";
 		public const string extractedImagesLocation = "./ExtractedImages/";
 		public const string extractedBGMLocation = "./ExtractedBGM/";
+		public const string extractedScriptsLocation = "./ExtractedScripts/";
 	}
 }
