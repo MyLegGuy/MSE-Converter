@@ -1,8 +1,8 @@
-
 // Keep track of which slots have busts in them. Only if it is the first bust in that slot do we do a fadein
 local usedBustSlots = {false,false,false};
 local usedBustsFilenames = {nil,nil,nil,nil};
 
+// For manual script mode
 function main()
 end
 
@@ -53,6 +53,7 @@ local function positionByteToSlotAndPosition(_passedPositionByte)
 	return _foundBustSlot, _foundBustPosition;
 end
 
+// This tells us what the upcoming busts are so we can know which ones to clear
 function ShowBustForecast(_passedForecastArray)
 	local _tempSavedSlots = {false,false,false,false};
 	for i=1,#_passedForecastArray do
@@ -71,11 +72,10 @@ function ShowBust(filename, _passedPositionByte)
 	local _foundBustPosition;
 	local _foundBustSlot;
 	_foundBustSlot, _foundBustPosition = positionByteToSlotAndPosition(_passedPositionByte);
-	// body
-	//DrawBustshotWithFiltering( 2, filename, "m1", 1, 0, 0, FALSE, 0, 0, 0, 0, 0, 10, 300, TRUE );
 	if (usedBustSlots[_foundBustSlot]==false) then
 		DrawBustshot( _foundBustSlot, filename, _foundBustPosition, 0, 0, FALSE, 0, 0, 0, 0, 0, 0, 0, 0, 200, TRUE );
 	else
+		// Do not reload this bust if it is the same
 		if (usedBustsFilenames[_foundBustSlot]==filename) then
 			return;
 		end
