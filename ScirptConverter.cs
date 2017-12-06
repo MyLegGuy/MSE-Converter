@@ -3,6 +3,15 @@
  * Date: 11/20/2017
  * Time: 5:36 PM
  */
+ 
+ /*
+ OLD NOTES: ARE THESE TRUE?
+ 	TODO - 0x81 0x99 is star character in script
+ 	TODO - 0x81 0xF4 is music note
+
+ TODO - How do I know where to jump after the first choice ends?
+ TODO - Maybe add a filter for all read strings that are 2 characters or less? This would filter the wierd ones at the start and the false choices.
+ */
 using System;
 using System.IO;
 using System.Collections.Generic;
@@ -32,8 +41,7 @@ namespace Petals{
 			}
 			return false;
 		}
-		// TODO 81 40 81 40 is newline
-		// TODO 81 by itself is a dot
+		
 		byte[] ReadNullTerminatedString(BinaryReader br){
 			List<byte> _tempReadBytes = new List<byte>();
 			byte _lastReadByte;
@@ -45,6 +53,9 @@ namespace Petals{
 					}
 					break;
 				}else if (_lastReadByte==0x81){ // newlines are 0x81 0x40 0x81 0x40
+					long _positionCache = br.BaseStream.Position;
+					
+					// Check if 
 					byte _lastReadNewlineByte = br.ReadByte();
 					if (_lastReadNewlineByte==0x40){
 						_lastReadNewlineByte = br.ReadByte();
@@ -66,18 +77,23 @@ namespace Petals{
 							}
 						}
 					}
+					
+					// We messed up by checking the next few characters. Fix that with our cache.
+					br.BaseStream.Position = _positionCache;
+					// TODO - Apparently, 0x81 by itself is a dot. Is this true? If so, fix this!
 					_tempReadBytes.Add(0x81);
 					continue;
-				}else if (!IsAsciiCharacter(_lastReadByte)){	
+				}else if (!IsAsciiCharacter(_lastReadByte)){
 					if (IsSpecialCharacter(_lastReadByte)){
 						_tempReadBytes.Add(_lastReadByte);
 						continue;
 					}
+					// We read a string, but it wasn't null terminated. Must not be an ASCII string.
 					return null;	
 				}
 				_tempReadBytes.Add(_lastReadByte);
 			}
-			_tempReadBytes.RemoveAll(x => x == 0);
+			_tempReadBytes.RemoveAll(x => x == 0); // Remove all 0 bytes. These are created by the newline parser
 			return _tempReadBytes.ToArray();
 		}
 		bool ContainsIlligalCharacters(string filename){
@@ -148,10 +164,15 @@ namespace Petals{
 			}
 			
 			if (_specialByte==0x03){
-				WriteDialougeCommand(bw,"CHOICE COMMAND? HERE!","");
-				return;
+				if (_readString.Length<3){
+					Console.Out.WriteLine("TEMP CHOICE DETECTION FIX!"); // HACK
+				}else{
+					bw.GoodWriteString("if (playerChoice()==0) then\n");
+					return;
+				}
 			}
 			
+			// Guess what type of command this is based on filename
 			if (!ContainsIlligalCharacters(_readString)){
 				if (IsCertianFileType(Options.extractedImagesLocation,_readString,".png")){
 					if (_specialByte==0x66){
@@ -205,6 +226,8 @@ namespace Petals{
 					}
 				}
 			}
+			
+			// Alright, well, there's no file with a name that's the same as this string's. It must be dialogue.
 			WriteDialougeCommand(bw,_readString,"");
 		}
 		
@@ -227,10 +250,34 @@ namespace Petals{
 			bw.GoodWriteString(("function main()\n"));
 			
 			List<Tuple<string, byte>> upcomingBustDisplayCommands = new List<Tuple<string, byte>>();
-			
+			bool _isSearchingForChoiceEnd=false;
 			while (br.BaseStream.Position != br.BaseStream.Length){
 				byte _lastReadByte;
 				_lastReadByte = br.ReadByte();
+				
+				
+				if (_isSearchingForChoiceEnd==true && _lastReadByte==0xFF){
+					// FF FF FF FF FF FF FF FF
+					// marks the end of the first choice block.
+					int i;
+					for (i=0;i<7;i++){ // We already read the first FF, make sure the next 7 are also FF.
+						_lastReadByte = br.ReadByte();
+						if (_lastReadByte!=0xFF){
+							br.BaseStream.Position--;
+							break;
+						}
+					}
+					if (i!=7){
+						continue;
+					}
+					Console.Out.WriteLine("Found the end!");
+					bw.GoodWriteString("else\n");
+					WriteDialougeCommand(bw,"Second choice exclusive!","");
+					bw.GoodWriteString("end\n");
+					_isSearchingForChoiceEnd=false;
+					continue;
+				}
+				
 				if (_lastReadByte==0x03){
 					byte[] _readString = ReadNullTerminatedString(br);
 					if (_readString!=null){
@@ -242,6 +289,14 @@ namespace Petals{
 							_readSpecialByte=0;
 						}
 						WriteCommand(bw,br,System.Text.Encoding.ASCII.GetString(_readString),_readSpecialByte,upcomingBustDisplayCommands);
+						// Did I just write a choice command?
+						if (_readSpecialByte==0x03){
+							if (System.Text.Encoding.ASCII.GetString(_readString).Length>3){ // HACK
+								// WriteCommand started the if statement, I need to be looking out for where to end it.
+								_isSearchingForChoiceEnd=true;
+							}
+						}
+						
 					}
 				}
 				

@@ -1,0 +1,34 @@
+﻿/*
+ * User: knoob
+ * Date: 12/5/2017
+ * Time: 9:52 PM
+ */
+
+S005.MSD
+
+
+FF FF FF FF FF FF FF FF
+THIS MARKS THE START OF THE RESULT FROM THE SECOND CHOICE!
+
+
+Choice pictures go in this order:
+Normal
+Hover
+Hover and hold selection button
+??
+??
+Choice pictures go in this order:
+Normal
+Hover
+Hover and hold selection button
+(Half of ??)
+(Enough space for another ??, but it's empty.)
+
+sel02_p
+
+First choice:
+
+
+Second choice:
+Nanami changes to angry expression
+"Onee-sama, your behaviour earlier is going"

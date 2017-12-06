@@ -6,6 +6,14 @@ local usedBustsFilenames = {nil,nil,nil,nil};
 function main()
 end
 
+function playerChoice()
+	Item = {};
+	Item[1] = "choice 1";
+	Item[2] = "choice 2";
+	Select( 2, Item );
+	return LoadValueFromLocalWork( "SelectResult" );
+end
+
 function ShowBackground(filename)
 	usedBustSlots = {false,false,false};
 	usedBustsFilenames = {nil,nil,nil,nil};
