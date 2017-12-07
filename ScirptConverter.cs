@@ -21,6 +21,8 @@ namespace Petals{
 	/// Description of ScirptConverter.
 	/// </summary>
 	public class ScirptConverter{
+		// Do not make this 3. There's a thing called "NO" that's used often.
+		public const byte minStringLength=2;
 		
 		bool IsAsciiCharacter(byte _value){
 			if (_value>=0x20 && _value<=0x7F){
@@ -152,6 +154,10 @@ namespace Petals{
 		66 - CG?
 		*/
 		void WriteCommand(BinaryWriter bw, BinaryReader br, string _readString, byte _specialByte, List<Tuple<string, byte>> _passedBustCommandList){
+			if (_readString.Length<minStringLength){ // HACK
+				return;
+			}
+			
 			// I think this is the special byte for the filters.
 			if (_specialByte==0xE4){
 				return;
@@ -164,12 +170,9 @@ namespace Petals{
 			}
 			
 			if (_specialByte==0x03){
-				if (_readString.Length<3){
-					Console.Out.WriteLine("TEMP CHOICE DETECTION FIX!"); // HACK
-				}else{
-					bw.GoodWriteString("if (playerChoice()==0) then\n");
-					return;
-				}
+				WriteDialougeCommand(bw,"<Choice command.>","");
+				//bw.GoodWriteString("if (playerChoice()==0) then\n");
+				return;
 			}
 			
 			// Guess what type of command this is based on filename
@@ -255,7 +258,6 @@ namespace Petals{
 				byte _lastReadByte;
 				_lastReadByte = br.ReadByte();
 				
-				
 				if (_isSearchingForChoiceEnd==true && _lastReadByte==0xFF){
 					// FF FF FF FF FF FF FF FF
 					// marks the end of the first choice block.
@@ -291,9 +293,13 @@ namespace Petals{
 						WriteCommand(bw,br,System.Text.Encoding.ASCII.GetString(_readString),_readSpecialByte,upcomingBustDisplayCommands);
 						// Did I just write a choice command?
 						if (_readSpecialByte==0x03){
-							if (System.Text.Encoding.ASCII.GetString(_readString).Length>3){ // HACK
+							if (System.Text.Encoding.ASCII.GetString(_readString).Length>minStringLength){
 								// WriteCommand started the if statement, I need to be looking out for where to end it.
 								_isSearchingForChoiceEnd=true;
+								
+								// TODO - Make choice detection.
+								// I'm disabling this, for now.
+								_isSearchingForChoiceEnd=false;
 							}
 						}
 						
