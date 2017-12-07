@@ -13,7 +13,7 @@ namespace Petals
 	public static class ExtentionMethods
 	{
 		public static void GoodWriteString(this BinaryWriter bw, string _stringToWrite){
-			bw.Write(System.Text.Encoding.ASCII.GetBytes(_stringToWrite));
+			bw.Write(System.Text.Encoding.UTF8.GetBytes(_stringToWrite));
 		}
 	}
 }

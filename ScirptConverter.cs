@@ -5,12 +5,7 @@
  */
  
  /*
- OLD NOTES: ARE THESE TRUE?
- 	TODO - 0x81 0x99 is star character in script
- 	TODO - 0x81 0xF4 is music note
-
  TODO - How do I know where to jump after the first choice ends?
- TODO - Maybe add a filter for all read strings that are 2 characters or less? This would filter the wierd ones at the start and the false choices.
  */
 using System;
 using System.IO;
@@ -82,8 +77,30 @@ namespace Petals{
 					
 					// We messed up by checking the next few characters. Fix that with our cache.
 					br.BaseStream.Position = _positionCache;
-					// TODO - Apparently, 0x81 by itself is a dot. Is this true? If so, fix this!
-					_tempReadBytes.Add(0x81);
+					
+					// Here, we check for special characters
+					byte _lastReadSpecialCheckByte = br.ReadByte();
+					
+					if (_lastReadSpecialCheckByte==0x75){ // Left hook bracket
+						_tempReadBytes.Add((byte)((int)' '));
+						_tempReadBytes.Add((byte)((int)'"'));
+					}else if (_lastReadSpecialCheckByte==0x76){ // Right hook bracket
+						_tempReadBytes.Add((byte)((int)'"'));
+						_tempReadBytes.Add((byte)((int)' '));
+					}else if (_lastReadSpecialCheckByte == 0x99){ // Star character
+						_tempReadBytes.Add(0xE2); // Special character byte
+						
+						_tempReadBytes.Add(152);
+						_tempReadBytes.Add(134);
+					}else if (_lastReadSpecialCheckByte == 0xF4){ // Music note character
+						_tempReadBytes.Add(0xE2); // Special character byte
+						
+						_tempReadBytes.Add(153);
+						_tempReadBytes.Add(170);
+					}else{
+						// This is how a lone 0x81 would appear
+						_tempReadBytes.Add((byte)'*');
+					}
 					continue;
 				}else if (!IsAsciiCharacter(_lastReadByte)){
 					if (IsSpecialCharacter(_lastReadByte)){
@@ -290,7 +307,7 @@ namespace Petals{
 						}catch(Exception){
 							_readSpecialByte=0;
 						}
-						WriteCommand(bw,br,System.Text.Encoding.ASCII.GetString(_readString),_readSpecialByte,upcomingBustDisplayCommands);
+						WriteCommand(bw,br,System.Text.Encoding.UTF8.GetString(_readString),_readSpecialByte,upcomingBustDisplayCommands);
 						// Did I just write a choice command?
 						if (_readSpecialByte==0x03){
 							if (System.Text.Encoding.ASCII.GetString(_readString).Length>minStringLength){
