@@ -7,9 +7,12 @@
 S005.MSD
 
 
-FF FF FF FF FF FF FF FF
-THIS MARKS THE START OF THE RESULT FROM THE SECOND CHOICE!
+01 03 00 00 00 01 0B 00 00 00 D9 07 00 00 05 00 26 00 01 96 00 00 00 04 01 00 00 00 96 00 00 00 00 00 00 00 01 00 00 00 02 00 00 00 FF FF FF FF FF FF FF FF
+This has something to do with choice blocks
 
+
+// Open source decompiler in C:
+http://repo.or.cz/fjfix.git
 
 Choice pictures go in this order:
 Normal
