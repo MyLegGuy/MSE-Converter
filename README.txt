@@ -1,0 +1,1 @@
+Convert MSE and MGD jpn for use on PS Vita & 3ds.
