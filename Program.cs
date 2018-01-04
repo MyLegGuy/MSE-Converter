@@ -13,7 +13,24 @@ namespace Petals
 		public static void Main(string[] args)
 		{
 			Console.WriteLine("Hello World!");
+			/*
+			Options.extractedBGMLocation = Options.streamingAssetsFolder+"BGM/";
+			Options.extractedImagesLocation = Options.streamingAssetsFolder+"CG/";
+			Options.extractedScriptsLocation = Options.streamingAssetsFolder+"Scripts/";
+			Options.extractedSELocation = Options.streamingAssetsFolder+"SE/";
+			Options.extractedVoiceLocation = Options.streamingAssetsFolder+"voice/";
 			
+			Directory.CreateDirectory(Options.streamingAssetsFolder);
+			Directory.CreateDirectory(Options.extractedBGMLocation);
+			Directory.CreateDirectory(Options.extractedImagesLocation);
+			Directory.CreateDirectory(Options.extractedScriptsLocation);
+			Directory.CreateDirectory(Options.extractedSELocation);
+			Directory.CreateDirectory(Options.extractedVoiceLocation);
+			
+			ArcUnpacker.unpackToDirectory("./MGD jpn");
+			//D:\Programming\C#\PetalsVitaConverter\bin\Debug\arc_unpacker.exe -o=./happy -d=nsystem/fjsys ./MSE
+			return;
+			*/
 			GraphicsConverter myGraphicsConverter = new GraphicsConverter("./MGD");
 			ScirptConverter myScriptConverter = new ScirptConverter("./MSE");
 			

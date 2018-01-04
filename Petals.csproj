@@ -48,6 +48,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ArcUnpacker.cs" />
     <Compile Include="ExtentionMethods.cs" />
     <Compile Include="GraphicsConverter.cs" />
     <Compile Include="Options.cs" />

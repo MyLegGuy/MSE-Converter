@@ -12,10 +12,15 @@ namespace Petals
 	/// </summary>
 	public static class Options
 	{
-		public const string extractedSELocation = "./ExtractedSE/";
-		public const string extractedVoiceLocation = "./ExtractedVoice/";
-		public const string extractedImagesLocation = "./ExtractedImages/";
-		public const string extractedBGMLocation = "./ExtractedBGM/";
-		public const string extractedScriptsLocation = "./ExtractedScripts/";
+		public const string streamingAssetsFolder = "./othergame/";
+		public const string arcUnpackerLocation = "./arc_unpacker.exe";
+		
+		// Look in Program.cs for their values. They are what I would expect and relative to streamingAssetsFolder
+		// They also end in a slash
+		public static string extractedSELocation;
+		public static string extractedVoiceLocation;
+		public static string extractedImagesLocation;
+		public static string extractedBGMLocation;
+		public static string extractedScriptsLocation;
 	}
 }
