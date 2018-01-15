@@ -15,5 +15,8 @@ namespace Petals
 		public static void GoodWriteString(this BinaryWriter bw, string _stringToWrite){
 			bw.Write(System.Text.Encoding.UTF8.GetBytes(_stringToWrite));
 		}
+		public static string MakeFilenameFriendly(this string filename){
+		    return string.Join("_", filename.Split(Path.GetInvalidFileNameChars()));
+		}
 	}
 }

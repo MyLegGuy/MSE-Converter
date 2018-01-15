@@ -263,7 +263,8 @@ namespace Petals{
 			_passedBustCommandList.Clear();
 		}
 		
-		public void ConvertScript(string _passedFilename, string _passedOutputFilename){
+		// Returns the name of the script which is the first string found.
+		public string ConvertScript(string _passedFilename, string _passedOutputFilename){
 			FileStream mainFileStream = new FileStream(_passedOutputFilename,FileMode.Create);
 			BinaryWriter bw = new BinaryWriter(mainFileStream);
 			BinaryReader br = new BinaryReader(new FileStream(_passedFilename,FileMode.Open));
@@ -271,6 +272,10 @@ namespace Petals{
 			
 			List<Tuple<string, byte>> upcomingBustDisplayCommands = new List<Tuple<string, byte>>();
 			bool _isSearchingForChoiceEnd=false;
+			bool _didFindScriptTitle=false;
+			string _foundScriptTitle="UNKNOWN";
+			
+			
 			while (br.BaseStream.Position != br.BaseStream.Length){
 				byte _lastReadByte;
 				_lastReadByte = br.ReadByte();
@@ -300,6 +305,12 @@ namespace Petals{
 				if (_lastReadByte==0x03){
 					byte[] _readString = ReadNullTerminatedString(br);
 					if (_readString!=null){
+						if (_didFindScriptTitle==false && _readString.Length>=4){ // HACK for length
+							_foundScriptTitle = System.Text.Encoding.ASCII.GetString(_readString);
+							_didFindScriptTitle=true;
+							continue;
+						}
+						
 						//Console.Out.WriteLine(System.Text.Encoding.Default.GetString(_readString));
 						byte _readSpecialByte;
 						try{
@@ -329,6 +340,8 @@ namespace Petals{
 			bw.Dispose();
 			mainFileStream.Dispose();
 			br.Dispose();
+			
+			return _foundScriptTitle;
 		}
 		public ScirptConverter(string _passedArchivedScriptFile){
 		}

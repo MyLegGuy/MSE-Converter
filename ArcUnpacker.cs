@@ -25,7 +25,8 @@ namespace Petals
 			}else{
 				startInfo.Arguments = "-d=nsystem/fjsys \""+_filename+"\"";
 			}
-			Process.Start(startInfo);
+			Process _myProcess = Process.Start(startInfo);
+			_myProcess.WaitForExit();
 		}
 	}
 }
