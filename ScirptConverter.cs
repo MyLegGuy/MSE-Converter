@@ -15,31 +15,28 @@ namespace Petals{
 	/// <summary>
 	/// Description of ScirptConverter.
 	/// </summary>
-	public class ScirptConverter{
-		// Do not make this 3. There's a thing called "NO" that's used often.
-		public const byte minStringLength=2;
-		
-		bool IsAsciiCharacter(byte _value){
+	public class ScriptConverter{
+		static bool IsAsciiCharacter(byte _value){
 			if (_value>=0x20 && _value<=0x7F){
 				return true;
 			}
 			return false;
 		}
-		bool IsSpecialCharacter(byte _value){
+		static bool IsSpecialCharacter(byte _value){
 			// Centered dot character thing
 			if (_value==0x81){
 				return true;
 			}
 			return false;
 		}
-		bool IsCertianFileType(string _fileDirectory,string _filename, string _fileExtention){
+		static bool IsCertianFileType(string _fileDirectory,string _filename, string _fileExtention){
 			if (File.Exists(Path.Combine(_fileDirectory,_filename+_fileExtention))){
 				return true;
 			}
 			return false;
 		}
 		
-		byte[] ReadNullTerminatedString(BinaryReader br){
+		static byte[] ReadNullTerminatedString(BinaryReader br){
 			List<byte> _tempReadBytes = new List<byte>();
 			byte _lastReadByte;
 			while(true){
@@ -115,7 +112,7 @@ namespace Petals{
 			_tempReadBytes.RemoveAll(x => x == 0); // Remove all 0 bytes. These are created by the newline parser
 			return _tempReadBytes.ToArray();
 		}
-		bool ContainsIlligalCharacters(string filename){
+		static bool ContainsIlligalCharacters(string filename){
 			char[] _tempInvalidCharacters = Path.GetInvalidFileNameChars();
 			int i;
 			for (i=0;i<_tempInvalidCharacters.Length;i++){
@@ -125,21 +122,21 @@ namespace Petals{
 			}
 			return false;
 		}
-		string MakeStringArgument(string _passedString){
+		static string MakeStringArgument(string _passedString){
 			_passedString = _passedString.Replace("'","\\'");
 			_passedString = _passedString.Replace("\"","\\\"");
 			return "\""+_passedString+"\"";
 		}
-		void WriteDialougeCommand(BinaryWriter bw, string _text, string _name){
+		static void WriteDialougeCommand(BinaryWriter bw, string _text, string _name){
 			bw.GoodWriteString(String.Format("ShowDialogue({0},{1});\n",MakeStringArgument(_text),MakeStringArgument(_name)));
 		}
-		void WriteVoiceCommand(BinaryWriter bw, string _filename){
+		static void WriteVoiceCommand(BinaryWriter bw, string _filename){
 			bw.GoodWriteString(String.Format("PlayVoice({0});\n",MakeStringArgument(_filename)));
 		}
-		void WriteSECommand(BinaryWriter bw, string _filename){
+		static void WriteSECommand(BinaryWriter bw, string _filename){
 			bw.GoodWriteString(String.Format("PlaySE({0});\n",MakeStringArgument(_filename)));
 		}
-		void WriteShowBustForecast(BinaryWriter bw, List<Tuple<string, byte>> _passedBustCommandList){
+		static void WriteShowBustForecast(BinaryWriter bw, List<Tuple<string, byte>> _passedBustCommandList){
 			bw.GoodWriteString("ShowBustForecast({");
 			int i;
 			for (i=0;i<_passedBustCommandList.Count;i++){
@@ -150,13 +147,13 @@ namespace Petals{
 			}
 			bw.GoodWriteString("});\n");
 		}
-		void WriteShowBustCommand(BinaryWriter bw, string _filename, byte _passedPositionByte){
+		static void WriteShowBustCommand(BinaryWriter bw, string _filename, byte _passedPositionByte){
 			bw.GoodWriteString(String.Format("ShowBust({0},{1});\n",MakeStringArgument(_filename),"0x"+_passedPositionByte.ToString("X")));
 		}
-		void WriteShowBackgroundCommand(BinaryWriter bw, string _filename){
+		static void WriteShowBackgroundCommand(BinaryWriter bw, string _filename){
 			bw.GoodWriteString(String.Format("ShowBackground({0});\n",MakeStringArgument(_filename)));
 		}
-		void WritePlayBGMCommand(BinaryWriter bw, string _filename){
+		static void WritePlayBGMCommand(BinaryWriter bw, string _filename){
 			bw.GoodWriteString(String.Format("PlayBGM({0});\n",MakeStringArgument(_filename)));
 		}
 		
@@ -170,8 +167,8 @@ namespace Petals{
 		01 - DIalouge?
 		66 - CG?
 		*/
-		void WriteCommand(BinaryWriter bw, BinaryReader br, string _readString, byte _specialByte, List<Tuple<string, byte>> _passedBustCommandList){
-			if (_readString.Length<minStringLength){ // HACK
+		static void WriteCommand(BinaryWriter bw, BinaryReader br, string _readString, byte _specialByte, List<Tuple<string, byte>> _passedBustCommandList){
+			if (_readString.Length<Options.minStringLength){ // HACK
 				return;
 			}
 			
@@ -251,7 +248,7 @@ namespace Petals{
 			WriteDialougeCommand(bw,_readString,"");
 		}
 		
-		public void WriteBustCommandList(BinaryWriter bw, List<Tuple<string, byte>> _passedBustCommandList){
+		static void WriteBustCommandList(BinaryWriter bw, List<Tuple<string, byte>> _passedBustCommandList){
 			if (_passedBustCommandList.Count==0){
 				return;
 			}
@@ -264,17 +261,21 @@ namespace Petals{
 		}
 		
 		// Returns the name of the script which is the first string found.
-		public string ConvertScript(string _passedFilename, string _passedOutputFilename){
-			FileStream mainFileStream = new FileStream(_passedOutputFilename,FileMode.Create);
-			BinaryWriter bw = new BinaryWriter(mainFileStream);
+		public static string ConvertScript(string _passedFilename, string _passedOutputFilename){
 			BinaryReader br = new BinaryReader(new FileStream(_passedFilename,FileMode.Open));
-			bw.GoodWriteString(("function main()\n"));
-			
 			List<Tuple<string, byte>> upcomingBustDisplayCommands = new List<Tuple<string, byte>>();
 			bool _isSearchingForChoiceEnd=false;
 			bool _didFindScriptTitle=false;
 			string _foundScriptTitle="UNKNOWN";
 			
+			byte[] _possibleMagicBytes = br.ReadBytes(14);
+			if (System.Text.Encoding.ASCII.GetString(_possibleMagicBytes)!="MSCENARIO FILE"){
+				Console.WriteLine("...corrupted or encrypted.");
+				return null;
+			}
+			FileStream mainFileStream = new FileStream(_passedOutputFilename,FileMode.Create);
+			BinaryWriter bw = new BinaryWriter(mainFileStream);
+			bw.GoodWriteString(("function main()\n"));
 			
 			while (br.BaseStream.Position != br.BaseStream.Length){
 				byte _lastReadByte;
@@ -321,7 +322,7 @@ namespace Petals{
 						WriteCommand(bw,br,System.Text.Encoding.UTF8.GetString(_readString),_readSpecialByte,upcomingBustDisplayCommands);
 						// Did I just write a choice command?
 						if (_readSpecialByte==0x03){
-							if (System.Text.Encoding.ASCII.GetString(_readString).Length>minStringLength){
+							if (System.Text.Encoding.ASCII.GetString(_readString).Length>Options.minStringLength){
 								// WriteCommand started the if statement, I need to be looking out for where to end it.
 								_isSearchingForChoiceEnd=true;
 								
@@ -341,9 +342,9 @@ namespace Petals{
 			mainFileStream.Dispose();
 			br.Dispose();
 			
+			Console.Out.WriteLine("...OK");
+			
 			return _foundScriptTitle;
-		}
-		public ScirptConverter(string _passedArchivedScriptFile){
 		}
 	}
 }

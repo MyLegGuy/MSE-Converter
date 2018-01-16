@@ -5,6 +5,7 @@
  */
 using System;
 using System.IO;
+using System.Drawing;
 
 namespace Petals{
 	public static class GraphicsConverter{
@@ -87,18 +88,71 @@ namespace Petals{
 			File.Delete(_mgdFilename);
 		}
 		
-		public static void convertGraphics(string _passedExtractionDirectory, string _passedFinalDirectory){
+		static Bitmap goodResizeImage(Bitmap _sourceImage, Size _newSize){
+			/*Bitmap _resultBitmap = new Bitmap(_newSize.Width,_newSize.Height);
+			using (Graphics goodGraphics = Graphics.FromImage(_resultBitmap)){
+				goodGraphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBilinear;
+				goodGraphics.DrawImage(_sourceImage,0,0,_newSize.Width,_newSize.Height);
+			}
+			return _resultBitmap;*/
+			return new Bitmap(_sourceImage,_newSize.Width,_newSize.Height);
+			
+		}
+		
+		// Dividing by a smaller number gives a bigger result than dividing by a bigger a number
+		// Whichever one needs to stretch less is the one we stretch to
+		static bool FitToWidth(int _imgWidth, int _imgHeight, int _screenWidth, int _screenHeight){
+			double _tempWidthResult = (double)_imgWidth/_screenWidth;
+			double _tempHeightResult = (double)_imgHeight/_screenHeight;
+			if (_tempWidthResult>_tempHeightResult){
+				return true;
+			}
+			return false;
+		}
+		
+		static double ImageToScreenRatio(int _imgSize, int _screenSize){
+			return _imgSize/(double)_screenSize;
+		}
+		
+		static int SizeScaledOutput(int _original, double _scaleFactor){
+			return (int)Math.Floor(_original/(double)_scaleFactor);
+		}
+		
+		public static void convertGraphics(string _passedExtractionDirectory, string _passedFinalDirectory, int screenWidth, int screenHeight){
 			// ArcUnpacker extracts some images as MGD instead of PNG. Let's fix that first.
 			string[] _imageFileList = Directory.GetFiles(_passedExtractionDirectory);
 			int i;
 			for (i=0;i<_imageFileList.Length;i++){
-				Console.Out.WriteLine(_imageFileList[i]);
 				if (Path.GetExtension(_imageFileList[i])==".MGD"){
 					fixMGDPNG(_imageFileList[i]);
 				}
 			}
 			// Update the listing because we removed some .MGD and added some .PNG
 			_imageFileList = Directory.GetFiles(_passedExtractionDirectory);
+			
+			// If images are going to fit to the screen's width, or the screen's height
+			bool doFitToWidth = FitToWidth(800,600,screenWidth,screenHeight);
+			double eightHundredScaleRatio;
+			
+			for (i=0;i<_imageFileList.Length;i++){
+				Bitmap currentFile = new Bitmap(_imageFileList[i]);
+				Console.Out.WriteLine("({0}x{1}) Image: {2}",currentFile.Width,currentFile.Height,_imageFileList[i]);
+				double _tempRatio;
+				if (doFitToWidth==true){
+					_tempRatio = ImageToScreenRatio(currentFile.Width,screenWidth);
+				}else{
+					_tempRatio = ImageToScreenRatio(currentFile.Height,screenHeight);
+				}
+					
+				Bitmap newScaledBitmap =  goodResizeImage(currentFile, new Size(SizeScaledOutput(currentFile.Width,_tempRatio), SizeScaledOutput(currentFile.Height,_tempRatio)));
+					
+				newScaledBitmap.Save(_passedFinalDirectory+Path.GetFileName(_imageFileList[i]));
+				newScaledBitmap.Dispose();
+				
+				currentFile.Dispose();
+			}
+			
+			
 		}
 	}
 }
