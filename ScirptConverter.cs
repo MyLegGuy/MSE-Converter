@@ -3,10 +3,7 @@
  * Date: 11/20/2017
  * Time: 5:36 PM
  */
- 
- /*
- TODO - How do I know where to jump after the first choice ends?
- */
+
 using System;
 using System.IO;
 using System.Collections.Generic;

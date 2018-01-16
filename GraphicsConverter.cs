@@ -132,8 +132,6 @@ namespace Petals{
 			
 			// If images are going to fit to the screen's width, or the screen's height
 			bool doFitToWidth = FitToWidth(800,600,screenWidth,screenHeight);
-			double eightHundredScaleRatio;
-			
 			for (i=0;i<_imageFileList.Length;i++){
 				Bitmap currentFile = new Bitmap(_imageFileList[i]);
 				Console.Out.WriteLine("({0}x{1}) Image: {2}",currentFile.Width,currentFile.Height,_imageFileList[i]);
