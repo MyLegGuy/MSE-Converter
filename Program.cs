@@ -79,14 +79,8 @@ namespace Petals{
 			Console.Out.WriteLine("Converting graphics...");
 			GraphicsConverter.convertGraphics(Options.extractedImagesLocation,Options.finalImagesLocation,960,544);
 			
-			//GraphicsConverter myGraphicsConverter = new GraphicsConverter("./MGD");
-			
-			//myScriptConverter.ConvertScript("./ExtractedScripts/S001.MSD","./S001.txt");
-			
-			PresetFileMaker _myPresetFileMaker = new PresetFileMaker();
-			
-			
 			Console.Out.WriteLine("Converting scripts...");
+			PresetFileMaker _myPresetFileMaker = new PresetFileMaker();
 			string[] _scriptFileList = Directory.GetFiles(Options.extractedScriptsLocation);
 			int i;
 			// TODO - Does this work for alphabetical?
@@ -132,7 +126,7 @@ namespace Petals{
 			Console.Out.WriteLine("Renaming StreamingAssets directory...");
 			Directory.Move(Options.streamingAssetsFolder,"./"+_userPresetFilename);
 			
-			Console.Write("Done!\nPress any key to continue . . . ");
+			Console.Write("Done.\nPress any key to continue . . . ");
 			Console.ReadKey(true);
 		}
 	}
