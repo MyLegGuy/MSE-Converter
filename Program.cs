@@ -36,9 +36,43 @@ namespace Petals{
 			Console.Out.WriteLine("Copy "+srcDirNoEndSlash+" to "+destDirNoEndSlash);
 			DirToDir(srcDirNoEndSlash,destDirNoEndSlash,false);
 		}
+		static void checkForGameFile(string _filename, ref bool _isFileMissing){
+			if (!File.Exists(_filename)){
+				printGameFileMissing(_filename);
+				_isFileMissing=true;
+			}
+		}
+		static void printGameFileMissing(string _filename){
+			Console.Out.WriteLine(_filename+" is missing. This is a file you must get from the game.");
+		}
+		static bool requiredFilesMissing(){
+			bool _isFileMissing=false;
+			checkForGameFile("./MSE", ref _isFileMissing);
+			checkForGameFile("./MGD jpn", ref _isFileMissing);
+			checkForGameFile("./BGM", ref _isFileMissing);
+			checkForGameFile("./VOICE", ref _isFileMissing);
+			checkForGameFile("./SE", ref _isFileMissing);
+			if (!Directory.Exists("./Stuff")){
+				Console.Out.WriteLine("./Stuff/ not found. This folder is supposed to be included with the download. If not, create a Github issue.");
+				_isFileMissing=true;
+			}
+			if (_isFileMissing){
+				pressAnyKeyToContinue();
+			}
+			return _isFileMissing;
+		}
+		
+		static void pressAnyKeyToContinue(){
+			Console.WriteLine("Press any key to continue . . . ");
+			Console.ReadKey(true);
+		}
 		
 		public static void Main(string[] args){
 			Console.WriteLine("Hello World!");
+			
+			if (requiredFilesMissing()){
+				return;
+			}
 			
 			// ArcUnpacker extracts depending on filename
 			Options.extractedImagesLocation = "./MGD jpn~/";
@@ -110,7 +144,6 @@ namespace Petals{
 			Directory.Delete(Options.extractedSELocation,true);
 			Directory.Delete(Options.extractedVoiceLocation,true);
 			
-			// TODO - Check if the "Stuff" folder exists.
 			Console.Out.WriteLine("Moving included assets to StreamingAssets...");
 			CopyDirToDir("./Stuff/",Options.streamingAssetsFolder);
 			
@@ -129,8 +162,8 @@ namespace Petals{
 			Console.Out.WriteLine("Renaming StreamingAssets directory...");
 			Directory.Move(Options.streamingAssetsFolder,"./"+_userPresetFilename);
 			
-			Console.Write("Done.\nPress any key to continue . . . ");
-			Console.ReadKey(true);
+			Console.Out.WriteLine("Done.");
+			pressAnyKeyToContinue();
 		}
 	}
 }
