@@ -7,6 +7,8 @@ using System;
 using System.IO;
 using Petals;
 
+// TODO - Look at names.png for a list of names in the game and use that to try and figure out how to know who says a line of a dialogue.
+
 namespace Petals{
 	class Program{
 		
@@ -59,7 +61,6 @@ namespace Petals{
 			Directory.CreateDirectory(Options.finalSELocation);
 			Directory.CreateDirectory(Options.finalVoiceLocation);
 			
-			// TODO - Check if the user has ArcUnpacker. If not, warn them and offer to download it if they're on Windows.
 			// English graphics
 			Console.Out.WriteLine("Extracting graphics, ./MGD jpn");
 			ArcUnpacker.unpackToDirectory("./MGD jpn");
@@ -76,8 +77,7 @@ namespace Petals{
 			Console.Out.WriteLine("Extracting SE, ./SE");
 			ArcUnpacker.unpackToDirectory("./SE");
 			
-			Console.Out.WriteLine("Converting graphics...");
-			GraphicsConverter.convertGraphics(Options.extractedImagesLocation,Options.finalImagesLocation,960,544);
+			GraphicsConverter.convertMGD(Options.extractedImagesLocation);
 			
 			Console.Out.WriteLine("Converting scripts...");
 			PresetFileMaker _myPresetFileMaker = new PresetFileMaker();
@@ -87,13 +87,16 @@ namespace Petals{
 			Array.Sort(_scriptFileList);
 			for (i=0;i<_scriptFileList.Length;i++){
 				if (Path.GetExtension(_scriptFileList[i])==".MSD"){
-					Console.Out.Write(Path.GetFileNameWithoutExtension(_scriptFileList[i]));
+					Console.Out.WriteLine(Path.GetFileNameWithoutExtension(_scriptFileList[i]));
 					string _nextPresetFilenameScriptConverter=ScriptConverter.ConvertScript(_scriptFileList[i],Options.finalScriptsLocation+Path.GetFileNameWithoutExtension(_scriptFileList[i])+".txt");
 					if (_nextPresetFilenameScriptConverter!=null){
 						_myPresetFileMaker.addScript(_scriptFileList[i], _nextPresetFilenameScriptConverter);
 					}
 				}
 			}
+			
+			Console.Out.WriteLine("Converting graphics...");
+			GraphicsConverter.convertGraphics(Options.extractedImagesLocation,Options.finalImagesLocation,960,544);
 			
 			Console.Out.WriteLine("Moving from extraction directories to StreamingAssets directories...");
 			MoveDirToDir(Options.extractedBGMLocation,Options.finalBGMLocation);

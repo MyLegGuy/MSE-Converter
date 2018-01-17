@@ -7,6 +7,7 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Text;
 using Petals;
 namespace Petals{
 	/// <summary>
@@ -267,7 +268,7 @@ namespace Petals{
 			
 			byte[] _possibleMagicBytes = br.ReadBytes(14);
 			if (System.Text.Encoding.ASCII.GetString(_possibleMagicBytes)!="MSCENARIO FILE"){
-				Console.WriteLine("...corrupted or encrypted.");
+				Console.WriteLine("Corrupted or encrypted.");
 				return null;
 			}
 			FileStream mainFileStream = new FileStream(_passedOutputFilename,FileMode.Create);
@@ -316,10 +317,12 @@ namespace Petals{
 						}catch(Exception){
 							_readSpecialByte=0;
 						}
-						WriteCommand(bw,br,System.Text.Encoding.UTF8.GetString(_readString),_readSpecialByte,upcomingBustDisplayCommands);
+						WriteCommand(bw,br,Encoding.UTF8.GetString(_readString),_readSpecialByte,upcomingBustDisplayCommands);
 						// Did I just write a choice command?
 						if (_readSpecialByte==0x03){
 							if (System.Text.Encoding.ASCII.GetString(_readString).Length>Options.minStringLength){
+								GraphicsConverter.splitChoiceGraphic(Path.Combine(Options.extractedImagesLocation,Encoding.ASCII.GetString(_readString)));
+								
 								// WriteCommand started the if statement, I need to be looking out for where to end it.
 								_isSearchingForChoiceEnd=true;
 								
@@ -339,7 +342,7 @@ namespace Petals{
 			mainFileStream.Dispose();
 			br.Dispose();
 			
-			Console.Out.WriteLine("...OK");
+			Console.Out.WriteLine("OK");
 			
 			return _foundScriptTitle;
 		}

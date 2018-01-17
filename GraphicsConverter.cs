@@ -9,7 +9,18 @@ using System.Drawing;
 
 namespace Petals{
 	public static class GraphicsConverter{
-		
+		public static void splitChoiceGraphic(string _questionGraphicFilename){
+			_questionGraphicFilename = Path.ChangeExtension(_questionGraphicFilename,".png");
+			Console.Out.WriteLine("Fix choice graphic "+_questionGraphicFilename); // TODO - Need proper path, get root directorty for extracted images
+			Bitmap _loadedQuestionGraphic = new Bitmap(_questionGraphicFilename);
+			const int _singleQuestionHeight=40;
+			for (int i=0;i<_loadedQuestionGraphic.Height/_singleQuestionHeight;i++){
+				Bitmap _croppedSingleChoice  = _loadedQuestionGraphic.Clone(new Rectangle(0,i*_singleQuestionHeight,_loadedQuestionGraphic.Width,_singleQuestionHeight),_loadedQuestionGraphic.PixelFormat);
+				_croppedSingleChoice.Save(_questionGraphicFilename.GetPathWithoutExtention()+i.ToString()+Path.GetExtension(_questionGraphicFilename));
+				_croppedSingleChoice.Dispose();
+			}
+			_loadedQuestionGraphic.Dispose();
+		}
 		// Byte with index 3 gets shifted to index 2
 		// Byte at the end is not shifted
 		static void shiftArrayLeft(ref byte[] _arrayToShift){
@@ -17,7 +28,6 @@ namespace Petals{
 				_arrayToShift[i] = _arrayToShift[i+1];
 			}
 		}
-		
 		// Checks if byte array contains bytes that mean the start of a PNG file
 		static bool didFindPNGStart(byte[] _passedPossibleStart){
 			if (_passedPossibleStart[0]==0x89 && _passedPossibleStart[1]==0x50 && _passedPossibleStart[2]==0x4E && _passedPossibleStart[3]==0x47){
@@ -32,14 +42,12 @@ namespace Petals{
 			}
 			return false;
 		}
-		
 		static void writePNGStart(FileStream _passedFilestream){
 			_passedFilestream.WriteByte(0x89);
 			_passedFilestream.WriteByte(0x50);
 			_passedFilestream.WriteByte(0x4E);
 			_passedFilestream.WriteByte(0x47);
 		}
-		
 		// If this .MGD file has one PNG file in it only then this function will extract the PNG and delete the MGD
 		static void fixMGDPNG(string _mgdFilename){
 			byte[] _byteHistory;
@@ -87,7 +95,6 @@ namespace Petals{
 			_mgdFilestream.Dispose();
 			File.Delete(_mgdFilename);
 		}
-		
 		static Bitmap goodResizeImage(Bitmap _sourceImage, Size _newSize){
 			/*Bitmap _resultBitmap = new Bitmap(_newSize.Width,_newSize.Height);
 			using (Graphics goodGraphics = Graphics.FromImage(_resultBitmap)){
@@ -98,7 +105,6 @@ namespace Petals{
 			return new Bitmap(_sourceImage,_newSize.Width,_newSize.Height);
 			
 		}
-		
 		// Dividing by a smaller number gives a bigger result than dividing by a bigger a number
 		// Whichever one needs to stretch less is the one we stretch to
 		static bool FitToWidth(int _imgWidth, int _imgHeight, int _screenWidth, int _screenHeight){
@@ -109,16 +115,13 @@ namespace Petals{
 			}
 			return false;
 		}
-		
 		static double ImageToScreenRatio(int _imgSize, int _screenSize){
 			return _imgSize/(double)_screenSize;
 		}
-		
 		static int SizeScaledOutput(int _original, double _scaleFactor){
 			return (int)Math.Floor(_original/(double)_scaleFactor);
 		}
-		
-		public static void convertGraphics(string _passedExtractionDirectory, string _passedFinalDirectory, int screenWidth, int screenHeight){
+		public static void convertMGD(string _passedExtractionDirectory){
 			// ArcUnpacker extracts some images as MGD instead of PNG. Let's fix that first.
 			string[] _imageFileList = Directory.GetFiles(_passedExtractionDirectory);
 			int i;
@@ -127,30 +130,39 @@ namespace Petals{
 					fixMGDPNG(_imageFileList[i]);
 				}
 			}
-			// Update the listing because we removed some .MGD and added some .PNG
-			_imageFileList = Directory.GetFiles(_passedExtractionDirectory);
+		}
+		public static void convertGraphics(string _passedExtractionDirectory, string _passedFinalDirectory, int screenWidth, int screenHeight){
+			int i;
+			string[] _imageFileList = Directory.GetFiles(_passedExtractionDirectory);
 			
 			// If images are going to fit to the screen's width, or the screen's height
 			bool doFitToWidth = FitToWidth(800,600,screenWidth,screenHeight);
 			for (i=0;i<_imageFileList.Length;i++){
 				Bitmap currentFile = new Bitmap(_imageFileList[i]);
+				Bitmap newScaledBitmap;
+				
 				Console.Out.WriteLine("({0}x{1}) Image: {2}",currentFile.Width,currentFile.Height,_imageFileList[i]);
-				double _tempRatio;
-				if (doFitToWidth==true){
-					_tempRatio = ImageToScreenRatio(currentFile.Width,screenWidth);
+				if (currentFile.Width==800 & currentFile.Height==600){
+					double _tempRatio;
+					if (doFitToWidth==true){
+						_tempRatio = ImageToScreenRatio(currentFile.Width,screenWidth);
+					}else{
+						_tempRatio = ImageToScreenRatio(currentFile.Height,screenHeight);
+					}	
+					newScaledBitmap =  goodResizeImage(currentFile, new Size(SizeScaledOutput(currentFile.Width,_tempRatio), SizeScaledOutput(currentFile.Height,_tempRatio)));
 				}else{
-					_tempRatio = ImageToScreenRatio(currentFile.Height,screenHeight);
+					double _tempRatio;
+					if (FitToWidth(currentFile.Width,currentFile.Height,screenWidth,screenHeight)==true){
+						_tempRatio = ImageToScreenRatio(currentFile.Width,screenWidth);
+					}else{
+						_tempRatio = ImageToScreenRatio(currentFile.Height,screenHeight);
+					}	
+					newScaledBitmap =  goodResizeImage(currentFile, new Size(SizeScaledOutput(currentFile.Width,_tempRatio), SizeScaledOutput(currentFile.Height,_tempRatio)));
 				}
-					
-				Bitmap newScaledBitmap =  goodResizeImage(currentFile, new Size(SizeScaledOutput(currentFile.Width,_tempRatio), SizeScaledOutput(currentFile.Height,_tempRatio)));
-					
 				newScaledBitmap.Save(_passedFinalDirectory+Path.GetFileName(_imageFileList[i]));
 				newScaledBitmap.Dispose();
-				
 				currentFile.Dispose();
 			}
-			
-			
 		}
 	}
 }

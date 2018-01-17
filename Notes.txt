@@ -29,9 +29,7 @@ Hover and hold selection button
 
 sel02_p
 
-First choice:
-
-
-Second choice:
-Nanami changes to angry expression
-"Onee-sama, your behaviour earlier is going"
+choice graphic:
+normal
+hover
+hover & click

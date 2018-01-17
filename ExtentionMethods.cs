@@ -18,5 +18,8 @@ namespace Petals
 		public static string MakeFilenameFriendly(this string filename){
 		    return string.Join("_", filename.Split(Path.GetInvalidFileNameChars()));
 		}
+		public static String GetPathWithoutExtention(this string path){
+			return Path.Combine(Path.GetDirectoryName(path), Path.GetFileNameWithoutExtension(path));
+    	}
 	}
 }
