@@ -166,7 +166,7 @@ namespace Petals{
 		66 - CG?
 		*/
 		static void WriteCommand(BinaryWriter bw, BinaryReader br, string _readString, byte _specialByte, List<Tuple<string, byte>> _passedBustCommandList){
-			if (_readString.Length<Options.minStringLength){ // HACK
+			if (_readString.Length<Options.minStringLength){ // HACK for length
 				return;
 			}
 			

@@ -117,7 +117,6 @@ namespace Petals{
 			PresetFileMaker _myPresetFileMaker = new PresetFileMaker();
 			string[] _scriptFileList = Directory.GetFiles(Options.extractedScriptsLocation);
 			int i;
-			// TODO - Does this work for alphabetical?
 			Array.Sort(_scriptFileList);
 			for (i=0;i<_scriptFileList.Length;i++){
 				if (Path.GetExtension(_scriptFileList[i])==".MSD"){

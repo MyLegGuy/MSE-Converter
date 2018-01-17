@@ -1,3 +1,5 @@
-Just open the project in a C# IDE and compile it. That'll probably work. I use SharpDevelop.
+Just open the project in a C# IDE and compile it. That'll probably work. I use SharpDevelop. I don't think there are any special dependencies.
 
 Once compiled, but the folder called "Stuff" next to the exe.
+Also download arc_unpacker and put the exe, named arc_unpacker.exe, next to the exe of my program.
+https://github.com/vn-tools/arc_unpacker

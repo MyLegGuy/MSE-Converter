@@ -11,7 +11,7 @@ namespace Petals{
 	public static class GraphicsConverter{
 		public static void splitChoiceGraphic(string _questionGraphicFilename){
 			_questionGraphicFilename = Path.ChangeExtension(_questionGraphicFilename,".png");
-			Console.Out.WriteLine("Fix choice graphic "+_questionGraphicFilename); // TODO - Need proper path, get root directorty for extracted images
+			Console.Out.WriteLine("Fix choice graphic "+_questionGraphicFilename);
 			Bitmap _loadedQuestionGraphic = new Bitmap(_questionGraphicFilename);
 			const int _singleQuestionHeight=40;
 			for (int i=0;i<_loadedQuestionGraphic.Height/_singleQuestionHeight;i++){
