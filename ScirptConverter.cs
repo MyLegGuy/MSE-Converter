@@ -125,17 +125,18 @@ namespace Petals{
 			_passedString = _passedString.Replace("\"","\\\"");
 			return "\""+_passedString+"\"";
 		}
+		
 		static void WriteDialougeCommand(BinaryWriter bw, string _text, string _name){
-			bw.GoodWriteString(String.Format("ShowDialogue({0},{1});\n",MakeStringArgument(_text),MakeStringArgument(_name)));
+			bw.GoodWriteString(String.Format("luastring ShowDialogue({0},{1});\n",MakeStringArgument(_text),MakeStringArgument(_name)));
 		}
 		static void WriteVoiceCommand(BinaryWriter bw, string _filename){
-			bw.GoodWriteString(String.Format("PlayVoice({0});\n",MakeStringArgument(_filename)));
+			bw.GoodWriteString(String.Format("luastring PlayVoice({0});\n",MakeStringArgument(_filename)));
 		}
 		static void WriteSECommand(BinaryWriter bw, string _filename){
-			bw.GoodWriteString(String.Format("PlaySE({0});\n",MakeStringArgument(_filename)));
+			bw.GoodWriteString(String.Format("luastring PlaySE({0});\n",MakeStringArgument(_filename)));
 		}
 		static void WriteShowBustForecast(BinaryWriter bw, List<Tuple<string, byte>> _passedBustCommandList){
-			bw.GoodWriteString("ShowBustForecast({");
+			bw.GoodWriteString("luastring ShowBustForecast({");
 			int i;
 			for (i=0;i<_passedBustCommandList.Count;i++){
 				if (i!=0){
@@ -146,14 +147,16 @@ namespace Petals{
 			bw.GoodWriteString("});\n");
 		}
 		static void WriteShowBustCommand(BinaryWriter bw, string _filename, byte _passedPositionByte){
-			bw.GoodWriteString(String.Format("ShowBust({0},{1});\n",MakeStringArgument(_filename),"0x"+_passedPositionByte.ToString("X")));
+			bw.GoodWriteString(String.Format("luastring ShowBust({0},{1});\n",MakeStringArgument(_filename),"0x"+_passedPositionByte.ToString("X")));
 		}
 		static void WriteShowBackgroundCommand(BinaryWriter bw, string _filename){
-			bw.GoodWriteString(String.Format("ShowBackground({0});\n",MakeStringArgument(_filename)));
+			bw.GoodWriteString(String.Format("luastring ShowBackground({0});\n",MakeStringArgument(_filename)));
 		}
 		static void WritePlayBGMCommand(BinaryWriter bw, string _filename){
-			bw.GoodWriteString(String.Format("PlayBGM({0});\n",MakeStringArgument(_filename)));
+			bw.GoodWriteString(String.Format("luastring PlayBGM({0});\n",MakeStringArgument(_filename)));
 		}
+		
+		
 		
 		/*	
 		d0 - sound?
@@ -259,7 +262,7 @@ namespace Petals{
 		}
 		
 		// Returns the name of the script which is the first string found.
-		public static string ConvertScript(string _passedFilename, string _passedOutputFilename){
+		public static string ConvertScript(string _passedFilename, string _passedOutputFilename, string _nextScriptFilename){
 			BinaryReader br = new BinaryReader(new FileStream(_passedFilename,FileMode.Open));
 			List<Tuple<string, byte>> upcomingBustDisplayCommands = new List<Tuple<string, byte>>();
 			bool _isSearchingForChoiceEnd=false;
@@ -273,7 +276,7 @@ namespace Petals{
 			}
 			FileStream mainFileStream = new FileStream(_passedOutputFilename,FileMode.Create);
 			BinaryWriter bw = new BinaryWriter(mainFileStream);
-			bw.GoodWriteString(("function main()\n"));
+			//bw.GoodWriteString(("function main()\n"));
 			
 			while (br.BaseStream.Position != br.BaseStream.Length){
 				byte _lastReadByte;
@@ -337,7 +340,10 @@ namespace Petals{
 				
 			}
 			
-			bw.GoodWriteString(("end"));
+			if (_nextScriptFilename!=null){
+				bw.GoodWriteString("jump "+_nextScriptFilename);
+			}
+			//bw.GoodWriteString(("end"));
 			bw.Dispose();
 			mainFileStream.Dispose();
 			br.Dispose();

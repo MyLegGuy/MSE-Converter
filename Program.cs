@@ -8,7 +8,7 @@ using System.IO;
 using Petals;
 
 // TODO - Look at names.png for a list of names in the game and use that to try and figure out how to know who says a line of a dialogue.
-
+// TODO - Alt script file doesn't work.
 namespace Petals{
 	class Program{
 		
@@ -47,8 +47,14 @@ namespace Petals{
 		}
 		static bool requiredFilesMissing(){
 			bool _isFileMissing=false;
-			checkForGameFile("./MSE", ref _isFileMissing);
-			checkForGameFile("./MGD jpn", ref _isFileMissing);
+			if (!File.Exists("./MSD")){ // Scripts 
+				Console.Out.WriteLine("./MSD missing, falling back on ./MSE");
+				checkForGameFile("./MSE", ref _isFileMissing);
+			}
+			if (!File.Exists("./MGD jpn")){
+				Console.Out.WriteLine("\"./MGD jpn\" is missing, falling back on ./MGD");
+				checkForGameFile("./MGD", ref _isFileMissing);
+			}
 			checkForGameFile("./BGM", ref _isFileMissing);
 			checkForGameFile("./VOICE", ref _isFileMissing);
 			checkForGameFile("./SE", ref _isFileMissing);
@@ -96,11 +102,24 @@ namespace Petals{
 			Directory.CreateDirectory(Options.finalVoiceLocation);
 			
 			// English graphics
-			Console.Out.WriteLine("Extracting graphics, ./MGD jpn");
-			ArcUnpacker.unpackToDirectory("./MGD jpn");
+			if (File.Exists("./MGD jpn")){
+				Console.Out.WriteLine("Extracting graphics, ./MGD jpn");
+				ArcUnpacker.unpackToDirectory("./MGD jpn");
+			}else if (File.Exists("./MGD")){
+				Options.extractedImagesLocation = "./MGD~/";
+				Console.Out.WriteLine("Extracting graphics, ./MGD");
+				ArcUnpacker.unpackToDirectory("./MGD");
+			}
 			// Scripts
-			Console.Out.WriteLine("Extracting scripts, ./MSE");
-			ArcUnpacker.unpackToDirectory("./MSE");
+			if (File.Exists("./MSE")){
+				Console.Out.WriteLine("Extracting scripts, ./MSE");
+				ArcUnpacker.unpackToDirectory("./MSE");
+			}else{
+				Options.extractedScriptsLocation = "./MSD~/";
+				Console.Out.WriteLine("Extracting scripts, ./MSD");
+				ArcUnpacker.unpackToDirectory("./MSD");
+			}
+			
 			//
 			Console.Out.WriteLine("Extracting voices, ./VOICE");
 			ArcUnpacker.unpackToDirectory("./VOICE");
@@ -117,12 +136,14 @@ namespace Petals{
 			PresetFileMaker _myPresetFileMaker = new PresetFileMaker();
 			string[] _scriptFileList = Directory.GetFiles(Options.extractedScriptsLocation);
 			int i;
+			bool _alreadyFoundMainScript=false;
 			Array.Sort(_scriptFileList);
 			for (i=0;i<_scriptFileList.Length;i++){
 				if (Path.GetExtension(_scriptFileList[i])==".MSD"){
 					Console.Out.WriteLine(Path.GetFileNameWithoutExtension(_scriptFileList[i]));
-					string _nextPresetFilenameScriptConverter=ScriptConverter.ConvertScript(_scriptFileList[i],Options.finalScriptsLocation+Path.GetFileNameWithoutExtension(_scriptFileList[i])+".txt");
+					string _nextPresetFilenameScriptConverter=ScriptConverter.ConvertScript(_scriptFileList[i],(_alreadyFoundMainScript==true ? Options.finalScriptsLocation+Path.GetFileNameWithoutExtension(_scriptFileList[i])+".scr" : Options.finalScriptsLocation+"main.scr"),(i!=_scriptFileList.Length-1 ?Path.GetFileNameWithoutExtension(_scriptFileList[i+1])+".scr" : null));
 					if (_nextPresetFilenameScriptConverter!=null){
+						_alreadyFoundMainScript=true;
 						_myPresetFileMaker.addScript(_scriptFileList[i], _nextPresetFilenameScriptConverter);
 					}
 				}
@@ -146,6 +167,9 @@ namespace Petals{
 			Console.Out.WriteLine("Moving included assets to StreamingAssets...");
 			CopyDirToDir("./Stuff/",Options.streamingAssetsFolder);
 			
+			Console.Out.WriteLine("Creating isvnds file.");
+			File.Create(Options.streamingAssetsFolder+"isvnds").Dispose();
+			
 			// Because this is a generic converter for multiple games, I can't have them all having the same preset filename or folder name.
 			// The user chooses the name of the folder and preset file
 			string _userPresetFilename=null;
@@ -159,7 +183,16 @@ namespace Petals{
 			_myStreamWriter.WriteLine(_userPresetFilename);
 			_myStreamWriter.Dispose();
 			Console.Out.WriteLine("Renaming StreamingAssets directory...");
-			Directory.Move(Options.streamingAssetsFolder,"./"+_userPresetFilename);
+			bool _couldRename=true;
+			do{
+			try{
+				Directory.Move(Options.streamingAssetsFolder,"./"+_userPresetFilename);
+			}catch(Exception e){
+				Console.Out.WriteLine(e.ToString()+"\nFailed to rename directory, retrying in 3 seconds.");
+				System.Threading.Thread.Sleep(3000);
+				_couldRename=false;
+			}
+			}while(_couldRename==false);
 			
 			Console.Out.WriteLine("Done.");
 			pressAnyKeyToContinue();
