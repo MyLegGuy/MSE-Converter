@@ -185,8 +185,7 @@ namespace Petals{
 			}
 			
 			if (_specialByte==0x03){
-				WriteDialougeCommand(bw,"<Choice command.>","");
-				//bw.GoodWriteString("if (playerChoice()==0) then\n");
+				Console.Out.WriteLine("Found choice command.\n");
 				return;
 			}
 			
@@ -277,12 +276,13 @@ namespace Petals{
 			FileStream mainFileStream = new FileStream(_passedOutputFilename,FileMode.Create);
 			BinaryWriter bw = new BinaryWriter(mainFileStream);
 			//bw.GoodWriteString(("function main()\n"));
+			bw.GoodWriteString("ScriptConverter v "+Options.scriptConverterVersion);
 			
 			while (br.BaseStream.Position != br.BaseStream.Length){
 				byte _lastReadByte;
 				_lastReadByte = br.ReadByte();
 				
-				if (_isSearchingForChoiceEnd==true && _lastReadByte==0xFF){
+				/*if (_isSearchingForChoiceEnd==true && _lastReadByte==0xFF){
 					// FF FF FF FF FF FF FF FF
 					// marks the end of the first choice block.
 					int i;
@@ -302,9 +302,28 @@ namespace Petals{
 					bw.GoodWriteString("end\n");
 					_isSearchingForChoiceEnd=false;
 					continue;
-				}
+				}*/
 				
 				if (_lastReadByte==0x03){
+					if (_isSearchingForChoiceEnd==true){ // 03 00 05 marks the choice end.
+						byte _nextByte = br.ReadByte();
+						if (_nextByte==0x00){
+							_nextByte = br.ReadByte();
+							if (_nextByte==0x05){
+								// Choice found
+								
+								bw.GoodWriteString("text (proceeding to second choice dialog)\n");
+								bw.GoodWriteString("fi\n");
+								bw.GoodWriteString("//TODO - Second choice if statement\n");
+								_isSearchingForChoiceEnd=false;
+								continue;
+							}else{
+								br.BaseStream.Seek(-2,SeekOrigin.Current);
+							}
+						}else{
+							br.BaseStream.Seek(-1,SeekOrigin.Current);
+						}
+					}
 					byte[] _readString = ReadNullTerminatedString(br);
 					if (_readString!=null){
 						if (_didFindScriptTitle==false && _readString.Length>=4){ // HACK for length
@@ -325,13 +344,10 @@ namespace Petals{
 						if (_readSpecialByte==0x03){
 							if (System.Text.Encoding.ASCII.GetString(_readString).Length>Options.minStringLength){
 								GraphicsConverter.splitChoiceGraphic(Path.Combine(Options.extractedImagesLocation,Encoding.ASCII.GetString(_readString)));
-								
 								// WriteCommand started the if statement, I need to be looking out for where to end it.
 								_isSearchingForChoiceEnd=true;
-								
-								// TODO - Make choice detection.
-								// I'm disabling this, for now.
-								_isSearchingForChoiceEnd=false;
+								bw.GoodWriteString(String.Format("imagechoice {0}0.png {0}1.png {0}2.png {0}5.png {0}6.png {0}7.png\n",Encoding.ASCII.GetString(_readString)));
+								bw.GoodWriteString("if selected == 1\n");
 							}
 						}
 						

@@ -18,6 +18,8 @@ namespace Petals
 		public static int screenWidth=960;
 		public static int screenHeight=544;
 		
+		public const float scriptConverterVersion=1.0f;
+		
 		// Do not make this 3. There's a thing called "NO" that's used often.
 		public const byte minStringLength=2;
 		
