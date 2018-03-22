@@ -276,7 +276,7 @@ namespace Petals{
 			FileStream mainFileStream = new FileStream(_passedOutputFilename,FileMode.Create);
 			BinaryWriter bw = new BinaryWriter(mainFileStream);
 			//bw.GoodWriteString(("function main()\n"));
-			bw.GoodWriteString("ScriptConverter v "+Options.scriptConverterVersion);
+			bw.GoodWriteString("ScriptConverter v "+Options.scriptConverterVersion+"\n");
 			
 			while (br.BaseStream.Position != br.BaseStream.Length){
 				byte _lastReadByte;
