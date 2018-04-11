@@ -3,6 +3,7 @@ OptionsEnableVoiceSetting();
 OptionsSetTextMode(TEXTMODE_AVD);
 OptionsLoadADVBox();
 OptionsCanChangeBoxAlpha(false)
+OptionsSetPositionSize(640,480);
 
 // Keep track of which slots have busts in them. Only if it is the first bust in that slot do we do a fadein
 local usedBustSlots = {false,false,false};
