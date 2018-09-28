@@ -4,6 +4,7 @@ OptionsSetTextMode(TEXTMODE_AVD);
 OptionsLoadADVBox();
 OptionsCanChangeBoxAlpha(false)
 OptionsSetPositionSize(640,480);
+OptionsSetIncludedFileExtensions(false)
 
 // Keep track of which slots have busts in them. Only if it is the first bust in that slot do we do a fadein
 local usedBustSlots = {false,false,false};
@@ -11,14 +12,6 @@ local usedBustsFilenames = {nil,nil,nil,nil};
 
 // For manual script mode
 function main()
-end
-
-function playerChoice()
-	Item = {};
-	Item[1] = "choice 1";
-	Item[2] = "choice 2";
-	Select( 2, Item );
-	return LoadValueFromLocalWork( "SelectResult" );
 end
 
 function ShowBackground(filename)
@@ -101,3 +94,17 @@ function ShowBust(filename, _passedPositionByte)
 	usedBustSlots[_foundBustSlot]=true;
 	usedBustsFilenames[_foundBustSlot]=filename;
 end
+
+oMenuVNDSSettings(0)
+oMenuRestartBGM(0)
+oMenuArtLocations(0)
+oMenuScalingOption(0)
+oMenuTextboxMode(0)
+oMenuTextOverBG(0)
+oMenuVNDSBustFade(0)
+oMenuDebugButton(0)
+dynamicAdvBoxHeight(0)
+
+textOnlyOverBackground(1)
+
+advboxHeight(147)
