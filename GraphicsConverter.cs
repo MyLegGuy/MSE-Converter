@@ -16,7 +16,14 @@ namespace Petals{
 			const int _singleQuestionHeight=40;
 			for (int i=0;i<_loadedQuestionGraphic.Height/_singleQuestionHeight;i++){
 				Bitmap _croppedSingleChoice  = _loadedQuestionGraphic.Clone(new Rectangle(0,i*_singleQuestionHeight,_loadedQuestionGraphic.Width,_singleQuestionHeight),_loadedQuestionGraphic.PixelFormat);
-				_croppedSingleChoice.Save(_questionGraphicFilename.GetPathWithoutExtention()+i.ToString()+Path.GetExtension(_questionGraphicFilename));
+				
+				//_croppedSingleChoice.Save(_questionGraphicFilename.GetPathWithoutExtention()+i.ToString()+Path.GetExtension(_questionGraphicFilename));
+				
+				// HACK Lazy fix for wrong width, hardcoded size
+				Bitmap _resizedSingleChoice = new Bitmap(_croppedSingleChoice,new Size(725,58));
+				_resizedSingleChoice.Save(_questionGraphicFilename.GetPathWithoutExtention()+i.ToString()+Path.GetExtension(_questionGraphicFilename));
+				_resizedSingleChoice.Dispose();
+				
 				_croppedSingleChoice.Dispose();
 			}
 			_loadedQuestionGraphic.Dispose();
@@ -138,6 +145,14 @@ namespace Petals{
 			// If images are going to fit to the screen's width, or the screen's height
 			bool doFitToWidth = FitToWidth(800,600,screenWidth,screenHeight);
 			for (i=0;i<_imageFileList.Length;i++){
+				// HACK for not changing selection images
+				if (Path.GetFileName(_imageFileList[i]).StartsWith("sel")){
+   					Console.Out.WriteLine("Skip because \"sel\"");
+   					Bitmap _temp = new Bitmap(_imageFileList[i]);
+   					_temp.Save(_passedFinalDirectory+Path.GetFileName(_imageFileList[i]));
+  				 	_temp.Dispose();
+      				continue;
+				}
 				Bitmap currentFile = new Bitmap(_imageFileList[i]);
 				Bitmap newScaledBitmap;
 				

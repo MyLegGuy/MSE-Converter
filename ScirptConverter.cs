@@ -185,7 +185,7 @@ namespace Petals{
 			}
 			
 			if (_specialByte==0x03){
-				Console.Out.WriteLine("Found choice command.\n");
+				Console.Out.WriteLine("Found choice command.");
 				return;
 			}
 			
@@ -346,7 +346,7 @@ namespace Petals{
 								GraphicsConverter.splitChoiceGraphic(Path.Combine(Options.extractedImagesLocation,Encoding.ASCII.GetString(_readString)));
 								// WriteCommand started the if statement, I need to be looking out for where to end it.
 								_isSearchingForChoiceEnd=true;
-								bw.GoodWriteString(String.Format("imagechoice {0}0.png {0}1.png {0}2.png {0}5.png {0}6.png {0}7.png\n",Encoding.ASCII.GetString(_readString)));
+								bw.GoodWriteString(String.Format("imagechoice {0}0 {0}1 {0}2 {0}5 {0}6 {0}7\n",Encoding.ASCII.GetString(_readString)));
 								bw.GoodWriteString("if selected == 1\n");
 							}
 						}

@@ -26,11 +26,12 @@ namespace Petals
 		// Look in Program.cs for their values. They are what I would expect and relative to streamingAssetsFolder
 		// They also end in a slash
 		// These are the locations of the files after they've been extracted, processed, and moved.
-		public static string finalSELocation;
-		public static string finalVoiceLocation;
+		//public static string finalSELocation;
+		//public static string finalVoiceLocation;
 		public static string finalImagesLocation;
-		public static string finalBGMLocation;
+		//public static string finalBGMLocation;
 		public static string finalScriptsLocation;
+		public static string finalSoundArchiveLocation;
 		
 		public static string extractedSELocation;
 		public static string extractedVoiceLocation;

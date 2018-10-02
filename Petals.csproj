@@ -52,6 +52,7 @@
     <Compile Include="ArcUnpacker.cs" />
     <Compile Include="ExtentionMethods.cs" />
     <Compile Include="GraphicsConverter.cs" />
+    <Compile Include="LegArchive.cs" />
     <Compile Include="Options.cs" />
     <Compile Include="PresetFileMaker.cs" />
     <Compile Include="Program.cs" />

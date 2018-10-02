@@ -68,6 +68,15 @@ namespace Petals{
 			return _isFileMissing;
 		}
 		
+		// Does not work with subdirectories
+		static void lazyAddLegarchive(LegArchive _passedArchive, string _dir){
+			int i;
+			String[] _addThese = Directory.GetFiles(_dir,"*",SearchOption.AllDirectories);
+			for (i=0;i<_addThese.Length;++i){
+				_passedArchive.addFile(_addThese[i],Path.GetFileName(_addThese[i]));
+			}
+		}
+		
 		static void pressAnyKeyToContinue(){
 			Console.WriteLine("Press any key to continue . . . ");
 			Console.ReadKey(true);
@@ -87,19 +96,20 @@ namespace Petals{
 			Options.extractedVoiceLocation = "./VOICE~/";
 			Options.extractedSELocation = "./SE~/";
 			
-			Options.finalBGMLocation = Options.streamingAssetsFolder+"BGM/";
+			//Options.finalBGMLocation = Options.streamingAssetsFolder+"BGM/";
 			Options.finalImagesLocation = Options.streamingAssetsFolder+"CG/";
 			Options.finalScriptsLocation = Options.streamingAssetsFolder+"Scripts/";
-			Options.finalSELocation = Options.streamingAssetsFolder+"SE/";
-			Options.finalVoiceLocation = Options.streamingAssetsFolder+"voice/";
+			//Options.finalSELocation = Options.streamingAssetsFolder+"SE/";
+			//Options.finalVoiceLocation = Options.streamingAssetsFolder+"voice/";
+			Options.finalSoundArchiveLocation = Options.streamingAssetsFolder+"SEArchive.legArchive";
 			
 			Console.Out.WriteLine("Making StreamingAssets directories...");
 			Directory.CreateDirectory(Options.streamingAssetsFolder);
-			Directory.CreateDirectory(Options.finalBGMLocation);
+			//Directory.CreateDirectory(Options.finalBGMLocation);
 			Directory.CreateDirectory(Options.finalImagesLocation);
 			Directory.CreateDirectory(Options.finalScriptsLocation);
-			Directory.CreateDirectory(Options.finalSELocation);
-			Directory.CreateDirectory(Options.finalVoiceLocation);
+			//Directory.CreateDirectory(Options.finalSELocation);
+			//Directory.CreateDirectory(Options.finalVoiceLocation);
 			
 			// English graphics
 			if (File.Exists("./MGD jpn")){
@@ -133,7 +143,7 @@ namespace Petals{
 			GraphicsConverter.convertMGD(Options.extractedImagesLocation);
 			
 			Console.Out.WriteLine("Converting scripts...");
-			PresetFileMaker _myPresetFileMaker = new PresetFileMaker();
+			//PresetFileMaker _myPresetFileMaker = new PresetFileMaker();
 			string[] _scriptFileList = Directory.GetFiles(Options.extractedScriptsLocation);
 			int i;
 			bool _alreadyFoundMainScript=false;
@@ -144,7 +154,7 @@ namespace Petals{
 					string _nextPresetFilenameScriptConverter=ScriptConverter.ConvertScript(_scriptFileList[i],(_alreadyFoundMainScript==true ? Options.finalScriptsLocation+Path.GetFileNameWithoutExtension(_scriptFileList[i])+".scr" : Options.finalScriptsLocation+"main.scr"),(i!=_scriptFileList.Length-1 ?Path.GetFileNameWithoutExtension(_scriptFileList[i+1])+".scr" : null));
 					if (_nextPresetFilenameScriptConverter!=null){
 						_alreadyFoundMainScript=true;
-						_myPresetFileMaker.addScript(_scriptFileList[i], _nextPresetFilenameScriptConverter);
+						//_myPresetFileMaker.addScript(_scriptFileList[i], _nextPresetFilenameScriptConverter);
 					}
 				}
 			}
@@ -153,9 +163,19 @@ namespace Petals{
 			GraphicsConverter.convertGraphics(Options.extractedImagesLocation,Options.finalImagesLocation,960,544);
 			
 			Console.Out.WriteLine("Moving from extraction directories to StreamingAssets directories...");
-			MoveDirToDir(Options.extractedBGMLocation,Options.finalBGMLocation);
-			MoveDirToDir(Options.extractedSELocation,Options.finalSELocation);
-			MoveDirToDir(Options.extractedVoiceLocation,Options.finalVoiceLocation);
+			
+			
+			// HACK - This will not support subdirectories because I'm lazy and they aren't needed. This note is only here for me if I come back years later trying to port the second game, or something, which could have subdirectories.
+			Console.Out.WriteLine("Creating sound archive...");
+			LegArchive _soundArchive = new LegArchive(Options.finalSoundArchiveLocation);
+			lazyAddLegarchive(_soundArchive,Options.extractedVoiceLocation);
+			lazyAddLegarchive(_soundArchive,Options.extractedBGMLocation);
+			lazyAddLegarchive(_soundArchive,Options.extractedSELocation);
+			_soundArchive.finish();
+			
+			//MoveDirToDir(Options.extractedBGMLocation,Options.finalBGMLocation);
+			//MoveDirToDir(Options.extractedSELocation,Options.finalSELocation);
+			//MoveDirToDir(Options.extractedVoiceLocation,Options.finalVoiceLocation);
 			
 			Console.Out.WriteLine("Deleting extraction directories...");
 			Directory.Delete(Options.extractedBGMLocation,true);
@@ -177,11 +197,14 @@ namespace Petals{
 				Console.WriteLine("=====\n=====\nGive this game a unique name without special characters\n=====\n=====");
 				_userPresetFilename = Console.ReadLine().MakeFilenameFriendly();
 			}
+			/*
 			Console.Out.WriteLine("Making preset...");
-			_myPresetFileMaker.writePresetFile(Options.streamingAssetsFolder+_userPresetFilename);
+			//_myPresetFileMaker.writePresetFile(Options.streamingAssetsFolder+_userPresetFilename);
 			StreamWriter _myStreamWriter = new StreamWriter(new FileStream(Options.streamingAssetsFolder+"includedPreset.txt",FileMode.Create));
 			_myStreamWriter.WriteLine(_userPresetFilename);
 			_myStreamWriter.Dispose();
+			*/
+			
 			Console.Out.WriteLine("Renaming StreamingAssets directory...");
 			bool _couldRename=true;
 			do{
