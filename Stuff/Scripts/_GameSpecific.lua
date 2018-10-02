@@ -107,4 +107,4 @@ dynamicAdvBoxHeight(0)
 
 textOnlyOverBackground(1)
 
-advboxHeight(147)
+advboxHeight(157)
