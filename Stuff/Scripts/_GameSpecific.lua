@@ -27,7 +27,7 @@ end
 PlayBGMOld = PlayBGM;
 function PlayBGM(filename)
 	//PlayBGMOld()
-	PlayBGMOld( 2, filename, 128, 0 );
+	PlayBGMOld( 0, filename, 128, 0 );
 end
 PlayVoiceOld = PlayVoice;
 function PlayVoice(filename)
