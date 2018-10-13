@@ -1,5 +1,9 @@
 Convert MSE and MGD jpn for use on PS Vita & 3ds.
 
+Note for Linux users
+-----
+Run the program with the terminal command "MONO_IOMAP=all mono Petals.exe".
+
 How to use
 ------
 1. Download the game. Apply the English patch if it's not already on.
