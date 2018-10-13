@@ -28,7 +28,7 @@ namespace Petals{
 			return false;
 		}
 		static bool IsCertianFileType(string _fileDirectory,string _filename, string _fileExtention){
-			if (File.Exists(Path.Combine(_fileDirectory,_filename+_fileExtention))){
+			if (File.Exists(Path.Combine(_fileDirectory,_filename+_fileExtention)) || File.Exists(Path.Combine(_fileDirectory,_filename.ToLower()+_fileExtention)) || File.Exists(Path.Combine(_fileDirectory,_filename.ToUpper()+_fileExtention))){
 				return true;
 			}
 			return false;

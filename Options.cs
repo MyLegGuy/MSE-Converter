@@ -13,7 +13,6 @@ namespace Petals
 	public static class Options
 	{
 		public const string streamingAssetsFolder = "./gameh/";
-		public const string arcUnpackerLocation = "./arc_unpacker.exe";
 		
 		public static int screenWidth=960;
 		public static int screenHeight=544;

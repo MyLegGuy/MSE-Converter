@@ -8,7 +8,6 @@ How to use
 4. From the game directory, copy the files called "BGM" "MGD jpn" "MSE" "SE" and "VOICE" to the root of the script converter directorty.
 5. Run the script converter
 6. When it's done, you'll have a new folder next to the script converter.
-7. For 3ds, put it in /3ds/data/HIGURASHI/Games/
 7. For PS Vita, put it in ux0:data/HIGURASHI/Games/  . Create the "Games" directory if it's not already there.
 
 Support
