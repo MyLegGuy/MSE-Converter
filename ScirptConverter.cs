@@ -14,6 +14,17 @@ namespace Petals{
 	/// Description of ScirptConverter.
 	/// </summary>
 	public class ScriptConverter{
+		enum cmdType{
+			UNKNOWN,
+			IMAGEUNKNOWN,
+			BG,
+			BUST,
+			BGM,
+			SE,
+			VOICE,
+			TEXT,
+			CHOICE,
+		};
 		static bool IsAsciiCharacter(byte _value){
 			if (_value>=0x20 && _value<=0x7F){
 				return true;
@@ -28,12 +39,8 @@ namespace Petals{
 			return false;
 		}
 		static bool IsCertianFileType(string _fileDirectory,string _filename, string _fileExtention){
-			if (File.Exists(Path.Combine(_fileDirectory,_filename+_fileExtention))){
-				return true;
-			}
-			return false;
+			return File.Exists(Path.Combine(_fileDirectory,_filename+_fileExtention));
 		}
-		
 		static byte[] ReadNullTerminatedString(BinaryReader br){
 			List<byte> _tempReadBytes = new List<byte>();
 			byte _lastReadByte;
@@ -102,6 +109,10 @@ namespace Petals{
 						_tempReadBytes.Add(_lastReadByte);
 						continue;
 					}
+					// avoid consuming potential command
+					if (_lastReadByte==0x03){
+						br.BaseStream.Position-=1;
+					}
 					// We read a string, but it wasn't null terminated. Must not be an ASCII string.
 					return null;	
 				}
@@ -155,9 +166,6 @@ namespace Petals{
 		static void WritePlayBGMCommand(BinaryWriter bw, string _filename){
 			bw.GoodWriteString(String.Format("luastring PlayBGM({0});\n",MakeStringArgument(_filename)));
 		}
-		
-		
-		
 		/*	
 		d0 - sound?
 		Da - sound?
@@ -168,84 +176,108 @@ namespace Petals{
 		01 - DIalouge?
 		66 - CG?
 		*/
-		static void WriteCommand(BinaryWriter bw, BinaryReader br, string _readString, byte _specialByte, List<Tuple<string, byte>> _passedBustCommandList){
-			if (_readString.Length<Options.minStringLength){ // HACK for length
-				return;
+		static cmdType getCommandType(string _readString, byte _specialByte){
+			// HACK for length
+			if (_readString.Length<Options.minStringLength){
+				return cmdType.UNKNOWN;
 			}
-			
 			// I think this is the special byte for the filters.
 			if (_specialByte==0xE4){
-				return;
+				return cmdType.UNKNOWN;
 			}
 			if (_specialByte==0xEE){ // GS_EN_NS
-				return;
+				return cmdType.UNKNOWN;
 			}
 			if (_specialByte==0x65){ // GS_HI_NS
-				return;
+				return cmdType.UNKNOWN;
 			}
-			
-			if (_specialByte==0x03){
+			if (_specialByte==0x03){				
 				Console.Out.WriteLine("Found choice command.");
-				return;
+				return cmdType.CHOICE;
 			}
-			
 			// Guess what type of command this is based on filename
 			if (!ContainsIlligalCharacters(_readString)){
 				if (IsCertianFileType(Options.extractedImagesLocation,_readString,".png")){
 					if (_specialByte==0x66){
 						// Definetly a CG or background
-						WriteShowBackgroundCommand(bw,_readString);
+						return cmdType.BG;
 					}else if (_specialByte==0x67){
 						// Definetly a bust
-						// Read the bust position byte.
-						br.BaseStream.Position+=9;
-						byte _readPositionByte=br.ReadByte();
-						// Is DAMMY, we don't need it.
-						if (_readPositionByte==0xEC){
-							return;
-						}
-						
-						// CU01, CU02, CU03 all have position byte 00
-						// CB far left
-						// C8 middle
-						// CE far right
-						if (!(_readPositionByte==0xCB || _readPositionByte==0xC8 || _readPositionByte==0xCE || _readPositionByte==0x00)){ 
-							Console.Out.WriteLine("===Unknown position byte===");
-							Console.Out.WriteLine(_readPositionByte.ToString("X"));
-							Console.Out.WriteLine(_readString);
-						}
-						
-						_passedBustCommandList.Add(new Tuple<string, byte>(_readString,_readPositionByte));
+						return cmdType.BUST;
 					}else{ // Unknown
-						// Unknown
-						br.BaseStream.Position+=9;
-						byte _tempReadPositionByte = br.ReadByte();
-						
-						Console.Out.WriteLine("===Unknown image type.===");
-						Console.Out.WriteLine("Special byte: 0x"+_specialByte.ToString("X"));
-						Console.Out.WriteLine("Position byte: 0x"+_tempReadPositionByte.ToString("X"));
-						Console.Out.WriteLine("Filename: "+_readString);
-						WriteDialougeCommand(bw,"Special byte: 0x" +_specialByte.ToString("X")+"  Position byte: 0x"+_tempReadPositionByte.ToString("X")+"   Filename: "+_readString,"NAME_ERROR");
-						WriteShowBackgroundCommand(bw,_readString);
+						return cmdType.IMAGEUNKNOWN;
 					}
-					return;
 				}else{
-					WriteBustCommandList(bw,_passedBustCommandList);
+					// maybe it's a sound command. guess using the different extraction directories
 					if (IsCertianFileType(Options.extractedVoiceLocation,_readString,".ogg")){
-						WriteVoiceCommand(bw,_readString);
-						return;
+						Console.WriteLine("found voice");
+						return cmdType.VOICE;
 					}else if (IsCertianFileType(Options.extractedBGMLocation,_readString,".ogg")){
-						WritePlayBGMCommand(bw,_readString);
-						return;
+						return cmdType.BGM;
 					}else if (IsCertianFileType(Options.extractedSELocation,_readString,".ogg")){
-						WriteSECommand(bw,_readString);
-						return;
+						return cmdType.SE;
 					}
 				}
 			}
-			
 			// Alright, well, there's no file with a name that's the same as this string's. It must be dialogue.
-			WriteDialougeCommand(bw,_readString,"");
+			return cmdType.TEXT;
+		}
+		
+		static void WriteCommand(cmdType _type, BinaryWriter bw, BinaryReader br, string _readString, byte _specialByte, List<Tuple<string, byte>> _passedBustCommandList){
+			if (_type==cmdType.TEXT || _type==cmdType.BGM || _type==cmdType.SE || _type==cmdType.VOICE){
+				WriteBustCommandList(bw,_passedBustCommandList);
+			}
+			switch(_type){
+				case cmdType.CHOICE:
+					// todo
+					return;
+				case cmdType.UNKNOWN:
+					return;
+				case cmdType.BG:
+					WriteShowBackgroundCommand(bw,_readString);
+					break;
+				case cmdType.BUST:
+					// Read the bust position byte.
+					br.BaseStream.Position+=9;
+					byte _readPositionByte=br.ReadByte();
+					// Is DAMMY, we don't need it.
+					if (_readPositionByte==0xEC){
+						return;
+					}
+					// CU01, CU02, CU03 all have position byte 00
+					// CB far left
+					// C8 middle
+					// CE far right
+					if (!(_readPositionByte==0xCB || _readPositionByte==0xC8 || _readPositionByte==0xCE || _readPositionByte==0x00)){ 
+						Console.Out.WriteLine("===Unknown position byte===");
+						Console.Out.WriteLine(_readPositionByte.ToString("X"));
+						Console.Out.WriteLine(_readString);
+					}
+					_passedBustCommandList.Add(new Tuple<string, byte>(_readString,_readPositionByte));
+					break;
+				case cmdType.IMAGEUNKNOWN:
+					br.BaseStream.Position+=9;
+					byte _tempReadPositionByte = br.ReadByte();
+					Console.Out.WriteLine("===Unknown image type.===");
+					Console.Out.WriteLine("Special byte: 0x"+_specialByte.ToString("X"));
+					Console.Out.WriteLine("Position byte: 0x"+_tempReadPositionByte.ToString("X"));
+					Console.Out.WriteLine("Filename: "+_readString);
+					WriteDialougeCommand(bw,"Special byte: 0x" +_specialByte.ToString("X")+"  Position byte: 0x"+_tempReadPositionByte.ToString("X")+"   Filename: "+_readString,"NAME_ERROR");
+					WriteShowBackgroundCommand(bw,_readString);
+					break;
+				case cmdType.BGM:
+					WritePlayBGMCommand(bw,_readString);
+					break;
+				case cmdType.SE:
+					WriteSECommand(bw,_readString);
+					break;
+				case cmdType.VOICE:
+					WriteVoiceCommand(bw,_readString);
+					break;
+				case cmdType.TEXT:
+					WriteDialougeCommand(bw,_readString,"");
+					break;
+			}
 		}
 		
 		static void WriteBustCommandList(BinaryWriter bw, List<Tuple<string, byte>> _passedBustCommandList){
@@ -265,8 +297,8 @@ namespace Petals{
 			BinaryReader br = new BinaryReader(new FileStream(_passedFilename,FileMode.Open));
 			List<Tuple<string, byte>> upcomingBustDisplayCommands = new List<Tuple<string, byte>>();
 			bool _isSearchingForChoiceEnd=false;
-			bool _didFindScriptTitle=false;
-			string _foundScriptTitle="UNKNOWN";
+			bool _isFirstCommand=true; // false if at least one command has been written
+			string _foundScriptTitle="NOTITLE";
 			
 			byte[] _possibleMagicBytes = br.ReadBytes(14);
 			if (System.Text.Encoding.ASCII.GetString(_possibleMagicBytes)!="MSCENARIO FILE"){
@@ -277,7 +309,6 @@ namespace Petals{
 			BinaryWriter bw = new BinaryWriter(mainFileStream);
 			//bw.GoodWriteString(("function main()\n"));
 			bw.GoodWriteString("ScriptConverter v "+Options.scriptConverterVersion+"\n");
-			
 			while (br.BaseStream.Position != br.BaseStream.Length){
 				byte _lastReadByte;
 				_lastReadByte = br.ReadByte();
@@ -305,13 +336,13 @@ namespace Petals{
 				}*/
 				
 				if (_lastReadByte==0x03){
+				newReadCommand:
 					if (_isSearchingForChoiceEnd==true){ // 03 00 05 marks the choice end.
 						byte _nextByte = br.ReadByte();
 						if (_nextByte==0x00){
 							_nextByte = br.ReadByte();
 							if (_nextByte==0x05){
 								// Choice found
-								
 								bw.GoodWriteString("text (proceeding to second choice dialog)\n");
 								bw.GoodWriteString("fi\n");
 								bw.GoodWriteString("//TODO - Second choice if statement\n");
@@ -326,22 +357,29 @@ namespace Petals{
 					}
 					byte[] _readString = ReadNullTerminatedString(br);
 					if (_readString!=null){
-						if (_didFindScriptTitle==false && _readString.Length>=4){ // HACK for length
-							_foundScriptTitle = System.Text.Encoding.ASCII.GetString(_readString);
-							_didFindScriptTitle=true;
-							continue;
-						}
-						
-						//Console.Out.WriteLine(System.Text.Encoding.Default.GetString(_readString));
 						byte _readSpecialByte;
 						try{
 							_readSpecialByte=br.ReadByte();
 						}catch(Exception){
 							_readSpecialByte=0;
 						}
-						WriteCommand(bw,br,Encoding.UTF8.GetString(_readString),_readSpecialByte,upcomingBustDisplayCommands);
-						// Did I just write a choice command?
-						if (_readSpecialByte==0x03){
+						cmdType _curType = getCommandType(Encoding.UTF8.GetString(_readString),_readSpecialByte);
+						if (_curType==cmdType.UNKNOWN && _readSpecialByte==0x03){
+							goto newReadCommand; // avoid consuming a potential command
+						}
+						// HACK - if the first command is dialogue, treat it as the scene title
+						if (_isFirstCommand && _curType==cmdType.TEXT){
+							_isFirstCommand=false;
+							_foundScriptTitle = System.Text.Encoding.ASCII.GetString(_readString);
+							bw.GoodWriteString(String.Format("setvar curSceneName = \"{0}\"\n",_foundScriptTitle.Replace('"','\'')));
+							continue;
+						}else{
+							if (_curType!=cmdType.UNKNOWN){
+								_isFirstCommand=false;
+							}
+						}
+						WriteCommand(_curType,bw,br,Encoding.UTF8.GetString(_readString),_readSpecialByte,upcomingBustDisplayCommands);
+						if (_curType==cmdType.CHOICE){ // Did I just write a choice command?
 							if (System.Text.Encoding.ASCII.GetString(_readString).Length>Options.minStringLength){
 								GraphicsConverter.splitChoiceGraphic(Path.Combine(Options.extractedImagesLocation,Encoding.ASCII.GetString(_readString)));
 								// WriteCommand started the if statement, I need to be looking out for where to end it.
@@ -353,7 +391,6 @@ namespace Petals{
 						
 					}
 				}
-				
 			}
 			
 			if (_nextScriptFilename!=null){

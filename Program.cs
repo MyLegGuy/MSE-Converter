@@ -8,7 +8,7 @@ using System.IO;
 using Petals;
 
 // TODO - Look at names.png for a list of names in the game and use that to try and figure out how to know who says a line of a dialogue.
-// TODO - Alt script file doesn't work.
+// TODO - Alt script file doesn't work - this is due to encryption
 namespace Petals{
 	class Program{
 		
@@ -84,9 +84,20 @@ namespace Petals{
 		
 		public static void Main(string[] args){
 			Console.WriteLine("Hello World!");
-			
 			if (requiredFilesMissing()){
 				return;
+			}
+			Console.Write("converting for Vita? (y/n): ");
+			if (Console.ReadLine().Trim()=="y"){
+				Console.WriteLine("Vita converting mode enabled");
+				Options.doResizeGraphics=true;
+				Options.useSoundArchive=true;
+				Options.screenWidth=960;
+				Options.screenHeight=544;
+			}else{
+				Console.WriteLine("generic platform mode");
+				Options.doResizeGraphics=false;
+				Options.useSoundArchive=false;
 			}
 			
 			// ArcUnpacker extracts depending on filename
@@ -96,22 +107,39 @@ namespace Petals{
 			Options.extractedVoiceLocation = "./VOICE~/";
 			Options.extractedSELocation = "./SE~/";
 			
-			//Options.finalBGMLocation = Options.streamingAssetsFolder+"BGM/";
 			Options.finalImagesLocation = Options.streamingAssetsFolder+"CG/";
 			Options.finalScriptsLocation = Options.streamingAssetsFolder+"Scripts/";
-			//Options.finalSELocation = Options.streamingAssetsFolder+"SE/";
-			//Options.finalVoiceLocation = Options.streamingAssetsFolder+"voice/";
 			Options.finalSoundArchiveLocation = Options.streamingAssetsFolder+"SEArchive.legArchive";
+			if (!Options.useSoundArchive){
+				Options.finalBGMLocation = Options.streamingAssetsFolder+"BGM/";
+				Options.finalSELocation = Options.streamingAssetsFolder+"SE/";
+				Options.finalVoiceLocation = Options.streamingAssetsFolder+"voice/";
+			}
 			
 			Console.Out.WriteLine("Making StreamingAssets directories...");
 			Directory.CreateDirectory(Options.streamingAssetsFolder);
-			//Directory.CreateDirectory(Options.finalBGMLocation);
 			Directory.CreateDirectory(Options.finalImagesLocation);
 			Directory.CreateDirectory(Options.finalScriptsLocation);
-			//Directory.CreateDirectory(Options.finalSELocation);
-			//Directory.CreateDirectory(Options.finalVoiceLocation);
-			
-			// English graphics
+			if (!Options.useSoundArchive){
+				Directory.CreateDirectory(Options.finalBGMLocation);
+				Directory.CreateDirectory(Options.finalSELocation);
+				Directory.CreateDirectory(Options.finalVoiceLocation);
+			}
+
+			// Extract scripts with fallback
+			Console.Out.Write("Extracting scripts, ");
+			if (File.Exists("./MSE")){
+				Console.Out.WriteLine("./MSE");
+				ArcUnpacker.unpackToDirectory("./MSE");
+			}else{
+				Options.extractedScriptsLocation = "./MSD~/";
+				Console.Out.WriteLine("./MSD");
+				ArcUnpacker.unpackToDirectory("./MSD");
+			}
+
+
+			/*
+			// Extract english graphics with fallback
 			if (File.Exists("./MGD jpn")){
 				Console.Out.WriteLine("Extracting graphics, ./MGD jpn");
 				ArcUnpacker.unpackToDirectory("./MGD jpn");
@@ -120,27 +148,19 @@ namespace Petals{
 				Console.Out.WriteLine("Extracting graphics, ./MGD");
 				ArcUnpacker.unpackToDirectory("./MGD");
 			}
-			// Scripts
-			if (File.Exists("./MSE")){
-				Console.Out.WriteLine("Extracting scripts, ./MSE");
-				ArcUnpacker.unpackToDirectory("./MSE");
-			}else{
-				Options.extractedScriptsLocation = "./MSD~/";
-				Console.Out.WriteLine("Extracting scripts, ./MSD");
-				ArcUnpacker.unpackToDirectory("./MSD");
-			}
-			
-			//
+			// Extract other stuff
 			Console.Out.WriteLine("Extracting voices, ./VOICE");
 			ArcUnpacker.unpackToDirectory("./VOICE");
-			//
 			Console.Out.WriteLine("Extracting BGM, ./BGM");
 			ArcUnpacker.unpackToDirectory("./BGM");
-			//
 			Console.Out.WriteLine("Extracting SE, ./SE");
 			ArcUnpacker.unpackToDirectory("./SE");
-			
+
+			// do a little bit of fixing of the mgd extraction.
+			// does not resize any graphics or anything horrible like that
 			GraphicsConverter.convertMGD(Options.extractedImagesLocation);
+
+			*/
 			
 			Console.Out.WriteLine("Converting scripts...");
 			//PresetFileMaker _myPresetFileMaker = new PresetFileMaker();
@@ -158,24 +178,32 @@ namespace Petals{
 					}
 				}
 			}
+			return;
 			
-			Console.Out.WriteLine("Converting graphics...");
-			GraphicsConverter.convertGraphics(Options.extractedImagesLocation,Options.finalImagesLocation,960,544);
+			// if enabled, resize the graphics and save the resized version to the appropriate location
+			if (Options.doResizeGraphics){
+				Console.Out.WriteLine("Resizing graphics...");
+				GraphicsConverter.resizeGraphics(Options.extractedImagesLocation,Options.finalImagesLocation,Options.screenWidth,Options.screenHeight);
+			}
 			
-			Console.Out.WriteLine("Moving from extraction directories to StreamingAssets directories...");
-			
-			
-			// HACK - This will not support subdirectories because I'm lazy and they aren't needed. This note is only here for me if I come back years later trying to port the second game, or something, which could have subdirectories.
-			Console.Out.WriteLine("Creating sound archive...");
-			LegArchive _soundArchive = new LegArchive(Options.finalSoundArchiveLocation);
-			lazyAddLegarchive(_soundArchive,Options.extractedVoiceLocation);
-			lazyAddLegarchive(_soundArchive,Options.extractedBGMLocation);
-			lazyAddLegarchive(_soundArchive,Options.extractedSELocation);
-			_soundArchive.finish();
-			
-			//MoveDirToDir(Options.extractedBGMLocation,Options.finalBGMLocation);
-			//MoveDirToDir(Options.extractedSELocation,Options.finalSELocation);
-			//MoveDirToDir(Options.extractedVoiceLocation,Options.finalVoiceLocation);
+			if (Options.useSoundArchive){
+				// HACK - This will not support subdirectories because I'm lazy and they aren't needed. This note is only here for me if I come back years later trying to port the second game, or something, which could have subdirectories.
+				Console.Out.WriteLine("Creating sound archive...");
+				LegArchive _soundArchive = new LegArchive(Options.finalSoundArchiveLocation);
+				lazyAddLegarchive(_soundArchive,Options.extractedVoiceLocation);
+				lazyAddLegarchive(_soundArchive,Options.extractedBGMLocation);
+				lazyAddLegarchive(_soundArchive,Options.extractedSELocation);
+				_soundArchive.finish();
+			}else{
+				Console.Out.WriteLine("Moving from extraction directories to StreamingAssets directories...");
+				MoveDirToDir(Options.extractedBGMLocation,Options.finalBGMLocation);
+				MoveDirToDir(Options.extractedSELocation,Options.finalSELocation);
+				MoveDirToDir(Options.extractedVoiceLocation,Options.finalVoiceLocation);
+				// if we didn't resize the graphics, we need to move the original extracted ones
+				if (!Options.doResizeGraphics){
+					MoveDirToDir(Options.extractedImagesLocation,Options.finalImagesLocation);
+				}
+			}
 			
 			Console.Out.WriteLine("Deleting extraction directories...");
 			Directory.Delete(Options.extractedBGMLocation,true);
@@ -208,13 +236,13 @@ namespace Petals{
 			Console.Out.WriteLine("Renaming StreamingAssets directory...");
 			bool _couldRename=true;
 			do{
-			try{
-				Directory.Move(Options.streamingAssetsFolder,"./"+_userPresetFilename);
-			}catch(Exception e){
-				Console.Out.WriteLine(e.ToString()+"\nFailed to rename directory, retrying in 3 seconds.");
-				System.Threading.Thread.Sleep(3000);
-				_couldRename=false;
-			}
+				try{
+					Directory.Move(Options.streamingAssetsFolder,"./"+_userPresetFilename);
+				}catch(Exception e){
+					Console.Out.WriteLine(e.ToString()+"\nFailed to rename directory, retrying in 3 seconds.");
+					System.Threading.Thread.Sleep(3000);
+					_couldRename=false;
+				}
 			}while(_couldRename==false);
 			
 			Console.Out.WriteLine("Done.");

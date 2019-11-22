@@ -12,18 +12,27 @@ namespace Petals{
 		public static void splitChoiceGraphic(string _questionGraphicFilename){
 			_questionGraphicFilename = Path.ChangeExtension(_questionGraphicFilename,".png");
 			Console.Out.WriteLine("Fix choice graphic "+_questionGraphicFilename);
-			Bitmap _loadedQuestionGraphic = new Bitmap(_questionGraphicFilename);
+			Bitmap _loadedQuestionGraphic=null;
+			try{
+				_loadedQuestionGraphic = new Bitmap(_questionGraphicFilename);
+			}catch(Exception e){
+				if (!Options.isDebugMode){
+					Console.WriteLine("choice graphic loading error.");
+					throw e;
+				}else{
+					return;
+				}
+			}
 			const int _singleQuestionHeight=40;
 			for (int i=0;i<_loadedQuestionGraphic.Height/_singleQuestionHeight;i++){
-				Bitmap _croppedSingleChoice  = _loadedQuestionGraphic.Clone(new Rectangle(0,i*_singleQuestionHeight,_loadedQuestionGraphic.Width,_singleQuestionHeight),_loadedQuestionGraphic.PixelFormat);
-				
-				//_croppedSingleChoice.Save(_questionGraphicFilename.GetPathWithoutExtention()+i.ToString()+Path.GetExtension(_questionGraphicFilename));
-				
-				// HACK Lazy fix for wrong width, hardcoded size
-				Bitmap _resizedSingleChoice = new Bitmap(_croppedSingleChoice,new Size(725,58));
-				_resizedSingleChoice.Save(_questionGraphicFilename.GetPathWithoutExtention()+i.ToString()+Path.GetExtension(_questionGraphicFilename));
-				_resizedSingleChoice.Dispose();
-				
+				Bitmap _croppedSingleChoice  = _loadedQuestionGraphic.Clone(new Rectangle(0,i*_singleQuestionHeight,_loadedQuestionGraphic.Width,_singleQuestionHeight),_loadedQuestionGraphic.PixelFormat);				
+				if (Options.doResizeGraphics){
+					// HACK Lazy fix for wrong width, hardcoded size
+					Bitmap _resizedSingleChoice = new Bitmap(_croppedSingleChoice,new Size(725,58));
+					_croppedSingleChoice.Dispose();
+					_croppedSingleChoice=_resizedSingleChoice;
+				}
+				_croppedSingleChoice.Save(_questionGraphicFilename.GetPathWithoutExtention()+i.ToString()+Path.GetExtension(_questionGraphicFilename));
 				_croppedSingleChoice.Dispose();
 			}
 			_loadedQuestionGraphic.Dispose();
@@ -138,7 +147,7 @@ namespace Petals{
 				}
 			}
 		}
-		public static void convertGraphics(string _passedExtractionDirectory, string _passedFinalDirectory, int screenWidth, int screenHeight){
+		public static void resizeGraphics(string _passedExtractionDirectory, string _passedFinalDirectory, int screenWidth, int screenHeight){
 			int i;
 			string[] _imageFileList = Directory.GetFiles(_passedExtractionDirectory);
 			

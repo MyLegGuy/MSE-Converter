@@ -56,7 +56,6 @@
     <Compile Include="Options.cs" />
     <Compile Include="PresetFileMaker.cs" />
     <Compile Include="Program.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ScirptConverter.cs" />
   </ItemGroup>
   <ItemGroup>
