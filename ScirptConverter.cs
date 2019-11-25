@@ -210,7 +210,6 @@ namespace Petals{
 				}else{
 					// maybe it's a sound command. guess using the different extraction directories
 					if (IsCertianFileType(Options.extractedVoiceLocation,_readString,".ogg")){
-						Console.WriteLine("found voice");
 						return cmdType.VOICE;
 					}else if (IsCertianFileType(Options.extractedBGMLocation,_readString,".ogg")){
 						return cmdType.BGM;

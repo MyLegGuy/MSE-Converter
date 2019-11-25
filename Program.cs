@@ -82,10 +82,10 @@ namespace Petals{
 			Console.ReadKey(true);
 		}
 		
-		public static void Main(string[] args){
+		public static int Main(string[] args){
 			Console.WriteLine("Hello World!");
 			if (requiredFilesMissing()){
-				return;
+				return 1;
 			}
 			Console.Write("converting for Vita? (y/n): ");
 			if (Console.ReadLine().Trim()=="y"){
@@ -137,8 +137,6 @@ namespace Petals{
 				ArcUnpacker.unpackToDirectory("./MSD");
 			}
 
-
-			/*
 			// Extract english graphics with fallback
 			if (File.Exists("./MGD jpn")){
 				Console.Out.WriteLine("Extracting graphics, ./MGD jpn");
@@ -160,16 +158,18 @@ namespace Petals{
 			// does not resize any graphics or anything horrible like that
 			GraphicsConverter.convertMGD(Options.extractedImagesLocation);
 
-			*/
-			
 			Console.Out.WriteLine("Converting scripts...");
 			//PresetFileMaker _myPresetFileMaker = new PresetFileMaker();
 			string[] _scriptFileList = Directory.GetFiles(Options.extractedScriptsLocation);
+			if (_scriptFileList.Length==0){
+				Console.Out.WriteLine("no scripts found in "+Options.extractedScriptsLocation);
+				return 1;
+			}
 			int i;
 			bool _alreadyFoundMainScript=false;
 			Array.Sort(_scriptFileList);
 			for (i=0;i<_scriptFileList.Length;i++){
-				if (Path.GetExtension(_scriptFileList[i])==".MSD"){
+				if (Path.GetExtension(_scriptFileList[i]).ToLower()==".msd"){
 					Console.Out.WriteLine(Path.GetFileNameWithoutExtension(_scriptFileList[i]));
 					string _nextPresetFilenameScriptConverter=ScriptConverter.ConvertScript(_scriptFileList[i],(_alreadyFoundMainScript==true ? Options.finalScriptsLocation+Path.GetFileNameWithoutExtension(_scriptFileList[i])+".scr" : Options.finalScriptsLocation+"main.scr"),(i!=_scriptFileList.Length-1 ?Path.GetFileNameWithoutExtension(_scriptFileList[i+1])+".scr" : null));
 					if (_nextPresetFilenameScriptConverter!=null){
@@ -178,7 +178,6 @@ namespace Petals{
 					}
 				}
 			}
-			return;
 			
 			// if enabled, resize the graphics and save the resized version to the appropriate location
 			if (Options.doResizeGraphics){
@@ -246,7 +245,7 @@ namespace Petals{
 			}while(_couldRename==false);
 			
 			Console.Out.WriteLine("Done.");
-			pressAnyKeyToContinue();
+			return 0;
 		}
 	}
 }

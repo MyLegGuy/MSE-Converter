@@ -18,7 +18,7 @@ namespace Petals
 		public static int screenHeight=544;
 		
 		public const float scriptConverterVersion=1.1f;
-		public const bool isDebugMode=true;
+		public const bool isDebugMode=false;
 		
 		// Do not make this 3. There's a thing called "NO" that's used often.
 		public const byte minStringLength=2;
