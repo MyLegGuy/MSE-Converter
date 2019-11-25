@@ -142,7 +142,7 @@ namespace Petals{
 			string[] _imageFileList = Directory.GetFiles(_passedExtractionDirectory);
 			int i;
 			for (i=0;i<_imageFileList.Length;i++){
-				if (Path.GetExtension(_imageFileList[i])==".MGD"){
+				if (Path.GetExtension(_imageFileList[i]).ToLower()==".mgd"){
 					fixMGDPNG(_imageFileList[i]);
 				}
 			}
