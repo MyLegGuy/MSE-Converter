@@ -9,6 +9,12 @@ using System.Drawing;
 
 namespace Petals{
 	public static class GraphicsConverter{
+		public static void saveSingleSubgraphic(Bitmap _source, string _destFile, int _x, int _y, int _w, int _h){
+			Console.WriteLine("crop to "+_destFile);
+			Bitmap _crop=_source.Clone(new Rectangle(_x,_y,_w,_h),_source.PixelFormat);
+			_crop.Save(_destFile);
+			_crop.Dispose();
+		}
 		public static void splitChoiceGraphic(string _questionGraphicFilename){
 			_questionGraphicFilename = Path.ChangeExtension(_questionGraphicFilename,".png");
 			Console.Out.WriteLine("Fix choice graphic "+_questionGraphicFilename);
@@ -25,7 +31,7 @@ namespace Petals{
 			}
 			const int _singleQuestionHeight=40;
 			for (int i=0;i<_loadedQuestionGraphic.Height/_singleQuestionHeight;i++){
-				Bitmap _croppedSingleChoice  = _loadedQuestionGraphic.Clone(new Rectangle(0,i*_singleQuestionHeight,_loadedQuestionGraphic.Width,_singleQuestionHeight),_loadedQuestionGraphic.PixelFormat);				
+				Bitmap _croppedSingleChoice  = _loadedQuestionGraphic.Clone(new Rectangle(0,i*_singleQuestionHeight,_loadedQuestionGraphic.Width,_singleQuestionHeight),_loadedQuestionGraphic.PixelFormat);
 				if (Options.doResizeGraphics){
 					// HACK Lazy fix for wrong width, hardcoded size
 					Bitmap _resizedSingleChoice = new Bitmap(_croppedSingleChoice,new Size(725,58));
@@ -147,6 +153,7 @@ namespace Petals{
 				}
 			}
 		}
+		// HACK - this will not make the filenames all caps, but this is intended for case-insensitive vita filesystem so it's okay
 		public static void resizeGraphics(string _passedExtractionDirectory, string _passedFinalDirectory, int screenWidth, int screenHeight){
 			int i;
 			string[] _imageFileList = Directory.GetFiles(_passedExtractionDirectory);

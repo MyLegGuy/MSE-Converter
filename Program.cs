@@ -4,15 +4,14 @@
  * Time: 5:30 PM
  */
 using System;
+using System.Drawing;
 using System.IO;
 using Petals;
 
-// TODO - Look at names.png for a list of names in the game and use that to try and figure out how to know who says a line of a dialogue.
 // TODO - Alt script file doesn't work - this is due to encryption
 namespace Petals{
 	class Program{
-		
-		static void DirToDir(string srcDirNoEndSlash, string destDirNoEndSlash, bool isMove){
+		static void DirToDir(string srcDirNoEndSlash, string destDirNoEndSlash, bool isMove, bool _capsFilename){
 			//Now Create all of the directories
 			foreach (string dirPath in Directory.GetDirectories(srcDirNoEndSlash, "*",  SearchOption.AllDirectories)){
 				Directory.CreateDirectory(dirPath.Replace(srcDirNoEndSlash, destDirNoEndSlash));
@@ -20,21 +19,24 @@ namespace Petals{
 			
 			//Copy all the files & Replaces any files with the same name
 			foreach (string newPath in Directory.GetFiles(srcDirNoEndSlash, "*.*",  SearchOption.AllDirectories)){
+				string _destFilename = newPath.Replace(srcDirNoEndSlash, destDirNoEndSlash);
+				if (_capsFilename){
+					_destFilename = Path.Combine(Path.GetDirectoryName(_destFilename),Path.GetFileName(_destFilename).ToUpper());
+				}
 				if (isMove){
-					File.Move(newPath, newPath.Replace(srcDirNoEndSlash, destDirNoEndSlash));
+					File.Move(newPath,_destFilename);
 				}else{
-					File.Copy(newPath, newPath.Replace(srcDirNoEndSlash, destDirNoEndSlash));
+					File.Copy(newPath,_destFilename);
 				}
 			}
 		}
-		
 		static void MoveDirToDir(string srcDirNoEndSlash, string destDirNoEndSlash){
 			Console.Out.WriteLine("Move "+srcDirNoEndSlash+" to "+destDirNoEndSlash);
-			DirToDir(srcDirNoEndSlash,destDirNoEndSlash,true);
+			DirToDir(srcDirNoEndSlash,destDirNoEndSlash,true,true);
 		}
 		static void CopyDirToDir(string srcDirNoEndSlash, string destDirNoEndSlash){
 			Console.Out.WriteLine("Copy "+srcDirNoEndSlash+" to "+destDirNoEndSlash);
-			DirToDir(srcDirNoEndSlash,destDirNoEndSlash,false);
+			DirToDir(srcDirNoEndSlash,destDirNoEndSlash,false,false);
 		}
 		static void checkForGameFile(string _filename, ref bool _isFileMissing){
 			if (!File.Exists(_filename)){
@@ -67,7 +69,6 @@ namespace Petals{
 			}
 			return _isFileMissing;
 		}
-		
 		// Does not work with subdirectories
 		static void lazyAddLegarchive(LegArchive _passedArchive, string _dir){
 			int i;
@@ -76,12 +77,58 @@ namespace Petals{
 				_passedArchive.addFile(_addThese[i],Path.GetFileName(_addThese[i]));
 			}
 		}
-		
 		static void pressAnyKeyToContinue(){
 			Console.WriteLine("Press any key to continue . . . ");
 			Console.ReadKey(true);
 		}
-		
+		static String pickBonusScript(){
+			if (!Directory.Exists("./manualScripts")){
+				Console.WriteLine("Warning, ./manualScripts does not exist");
+				return null;
+			}
+			Console.WriteLine("(0) none");
+			String[] _potential = Directory.GetFiles("./manualScripts");
+			int i;
+			for (i=0;i<_potential.Length;++i){
+				Console.WriteLine("("+(i+1)+") "+_potential[i]);
+			}
+			Console.WriteLine("Chose script:");
+			i = Int32.Parse(Console.ReadLine());
+			if (i<=0 || i>_potential.Length){
+				return null;
+			}else{
+				return _potential[i-1];
+			}
+		}
+		static void runBonusScript(String _path){
+			StreamReader file = new StreamReader(_path);
+			Bitmap _curImg=null;
+			String line;
+			while((line=file.ReadLine())!=null){
+				if (line.Length==0 || line[0]=='#'){
+					continue;
+				}
+				String[] args = line.Split(' ');
+				if (args[0]=="mkdir"){
+					Directory.CreateDirectory(Path.Combine(Options.streamingAssetsFolder,args[1]));
+				}else if (args[0]=="subGraphic"){
+					GraphicsConverter.saveSingleSubgraphic(_curImg,Path.Combine(Options.streamingAssetsFolder,args[1]),Int32.Parse(args[2]),Int32.Parse(args[3]),Int32.Parse(args[4]),Int32.Parse(args[5]));
+				}else if (args[0]=="loadImg"){
+					if (_curImg!=null){
+						_curImg.Dispose();
+					}
+					string _fullPath = Path.Combine(Options.extractedImagesLocation,args[1]);
+					Console.WriteLine(_fullPath);
+					_curImg = new Bitmap(_fullPath);
+				}else{
+					throw new Exception("invalid command "+args[0]);
+				}
+			}
+			if (_curImg!=null){
+				_curImg.Dispose();
+			}
+			file.Close();
+		}
 		public static int Main(string[] args){
 			Console.WriteLine("Hello World!");
 			if (requiredFilesMissing()){
@@ -99,14 +146,14 @@ namespace Petals{
 				Options.doResizeGraphics=false;
 				Options.useSoundArchive=false;
 			}
-			
+			String _bonusScript = pickBonusScript();
 			// ArcUnpacker extracts depending on filename
 			Options.extractedImagesLocation = "./MGD jpn~/";
 			Options.extractedScriptsLocation = "./MSE~/";
 			Options.extractedBGMLocation = "./BGM~/";
 			Options.extractedVoiceLocation = "./VOICE~/";
 			Options.extractedSELocation = "./SE~/";
-			
+			//
 			Options.finalImagesLocation = Options.streamingAssetsFolder+"CG/";
 			Options.finalScriptsLocation = Options.streamingAssetsFolder+"Scripts/";
 			Options.finalSoundArchiveLocation = Options.streamingAssetsFolder+"SEArchive.legArchive";
@@ -115,7 +162,6 @@ namespace Petals{
 				Options.finalSELocation = Options.streamingAssetsFolder+"SE/";
 				Options.finalVoiceLocation = Options.streamingAssetsFolder+"voice/";
 			}
-			
 			Console.Out.WriteLine("Making StreamingAssets directories...");
 			Directory.CreateDirectory(Options.streamingAssetsFolder);
 			Directory.CreateDirectory(Options.finalImagesLocation);
@@ -125,39 +171,44 @@ namespace Petals{
 				Directory.CreateDirectory(Options.finalSELocation);
 				Directory.CreateDirectory(Options.finalVoiceLocation);
 			}
+			// extract assts
+			if (!(args.Length>=1 && args[0]=="--noextract")){
+				// Extract scripts with fallback
+				Console.Out.Write("Extracting scripts, ");
+				if (File.Exists("./MSE")){
+					Console.Out.WriteLine("./MSE");
+					ArcUnpacker.unpackToDirectory("./MSE");
+				}else{
+					Options.extractedScriptsLocation = "./MSD~/";
+					Console.Out.WriteLine("./MSD");
+					ArcUnpacker.unpackToDirectory("./MSD");
+				}
 
-			// Extract scripts with fallback
-			Console.Out.Write("Extracting scripts, ");
-			if (File.Exists("./MSE")){
-				Console.Out.WriteLine("./MSE");
-				ArcUnpacker.unpackToDirectory("./MSE");
-			}else{
-				Options.extractedScriptsLocation = "./MSD~/";
-				Console.Out.WriteLine("./MSD");
-				ArcUnpacker.unpackToDirectory("./MSD");
+				// Extract english graphics with fallback
+				if (File.Exists("./MGD jpn")){
+					Console.Out.WriteLine("Extracting graphics, ./MGD jpn");
+					ArcUnpacker.unpackToDirectory("./MGD jpn");
+				}else if (File.Exists("./MGD")){
+					Options.extractedImagesLocation = "./MGD~/";
+					Console.Out.WriteLine("Extracting graphics, ./MGD");
+					ArcUnpacker.unpackToDirectory("./MGD");
+				}
+				// Extract other stuff
+				Console.Out.WriteLine("Extracting voices, ./VOICE");
+				ArcUnpacker.unpackToDirectory("./VOICE");
+				Console.Out.WriteLine("Extracting BGM, ./BGM");
+				ArcUnpacker.unpackToDirectory("./BGM");
+				Console.Out.WriteLine("Extracting SE, ./SE");
+				ArcUnpacker.unpackToDirectory("./SE");
+
+				// do a little bit of fixing of the mgd extraction.
+				// does not resize any graphics or anything horrible like that
+				GraphicsConverter.convertMGD(Options.extractedImagesLocation);
+			}			
+			if (_bonusScript!=null){
+				Console.WriteLine("running "+_bonusScript);
+				runBonusScript(_bonusScript);
 			}
-
-			// Extract english graphics with fallback
-			if (File.Exists("./MGD jpn")){
-				Console.Out.WriteLine("Extracting graphics, ./MGD jpn");
-				ArcUnpacker.unpackToDirectory("./MGD jpn");
-			}else if (File.Exists("./MGD")){
-				Options.extractedImagesLocation = "./MGD~/";
-				Console.Out.WriteLine("Extracting graphics, ./MGD");
-				ArcUnpacker.unpackToDirectory("./MGD");
-			}
-			// Extract other stuff
-			Console.Out.WriteLine("Extracting voices, ./VOICE");
-			ArcUnpacker.unpackToDirectory("./VOICE");
-			Console.Out.WriteLine("Extracting BGM, ./BGM");
-			ArcUnpacker.unpackToDirectory("./BGM");
-			Console.Out.WriteLine("Extracting SE, ./SE");
-			ArcUnpacker.unpackToDirectory("./SE");
-
-			// do a little bit of fixing of the mgd extraction.
-			// does not resize any graphics or anything horrible like that
-			GraphicsConverter.convertMGD(Options.extractedImagesLocation);
-
 			Console.Out.WriteLine("Converting scripts...");
 			//PresetFileMaker _myPresetFileMaker = new PresetFileMaker();
 			string[] _scriptFileList = Directory.GetFiles(Options.extractedScriptsLocation);
@@ -171,20 +222,17 @@ namespace Petals{
 			for (i=0;i<_scriptFileList.Length;i++){
 				if (Path.GetExtension(_scriptFileList[i]).ToLower()==".msd"){
 					Console.Out.WriteLine(Path.GetFileNameWithoutExtension(_scriptFileList[i]));
-					string _nextPresetFilenameScriptConverter=ScriptConverter.ConvertScript(_scriptFileList[i],(_alreadyFoundMainScript==true ? Options.finalScriptsLocation+Path.GetFileNameWithoutExtension(_scriptFileList[i])+".scr" : Options.finalScriptsLocation+"main.scr"),(i!=_scriptFileList.Length-1 ?Path.GetFileNameWithoutExtension(_scriptFileList[i+1])+".scr" : null));
-					if (_nextPresetFilenameScriptConverter!=null){
+					bool _isValid=ScriptConverter.ConvertScript(_scriptFileList[i],(_alreadyFoundMainScript ? Options.finalScriptsLocation+Path.GetFileNameWithoutExtension(_scriptFileList[i])+".scr" : Options.finalScriptsLocation+"main.scr"),(i!=_scriptFileList.Length-1 ?Path.GetFileNameWithoutExtension(_scriptFileList[i+1])+".scr" : null));
+					if (_isValid){
 						_alreadyFoundMainScript=true;
-						//_myPresetFileMaker.addScript(_scriptFileList[i], _nextPresetFilenameScriptConverter);
 					}
 				}
 			}
-			
 			// if enabled, resize the graphics and save the resized version to the appropriate location
 			if (Options.doResizeGraphics){
 				Console.Out.WriteLine("Resizing graphics...");
 				GraphicsConverter.resizeGraphics(Options.extractedImagesLocation,Options.finalImagesLocation,Options.screenWidth,Options.screenHeight);
 			}
-			
 			if (Options.useSoundArchive){
 				// HACK - This will not support subdirectories because I'm lazy and they aren't needed. This note is only here for me if I come back years later trying to port the second game, or something, which could have subdirectories.
 				Console.Out.WriteLine("Creating sound archive...");
@@ -210,7 +258,7 @@ namespace Petals{
 			Directory.Delete(Options.extractedScriptsLocation,true);
 			Directory.Delete(Options.extractedSELocation,true);
 			Directory.Delete(Options.extractedVoiceLocation,true);
-			
+
 			Console.Out.WriteLine("Moving included assets to StreamingAssets...");
 			CopyDirToDir("./Stuff/",Options.streamingAssetsFolder);
 			
