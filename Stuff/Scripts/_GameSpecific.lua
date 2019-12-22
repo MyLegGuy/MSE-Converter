@@ -109,11 +109,6 @@ function positionBust(args)
 	  lastBustshotFilename=nil;
    end
 end
-// can be overridden 
-function showDialogue(_words, _nameId)
-   ClearMessage();
-   OutputLine(nil,nil,_nameId,_words,Line_Normal);
-end
 /////////////////////
 // Actual commands
 /////////////////////
@@ -146,7 +141,13 @@ function goodPlayBGM(args)
    PlayBGM(0,fixFilename(args[1],FILETYPE_SOUND),128,0);
 end
 function scriptShowDialogue(args)
-   showDialogue(fixString(args[4]),nextNameId);
+   local _words = fixString(args[4]);
+   if (getTextDisplayMode()==TEXTMODE_ADV) then
+		ClearMessage();
+   else // nvl mode
+	  _words = (_words .. "\n")
+   end
+   OutputLine(nil,nil,nextNameId,_words,Line_Normal);
    nextNameId=nil;
 end
 function setTextColor(args)
@@ -275,3 +276,4 @@ advboxHeight(scalePixels(136,1))
 setADVNameImageHeight(scalePixels(25,1))
 // (8/600)*480
 setTextboxTopPad(scalePixels(6,1))
+

@@ -83,3 +83,7 @@ subGraphic CG/specialExtract/t5-4.png 600 180 150 45
 # extract the top of the settings image.
 loadImg option.png
 subGraphic CG/specialExtract/settingsTitle.png 0 0 253 68
+
+# extract the top of the "extras" image
+loadImg EX_CG.png
+subGraphic CG/specialExtract/extrasTitle.png 0 0 212 57
