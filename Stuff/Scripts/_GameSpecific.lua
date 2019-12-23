@@ -32,6 +32,12 @@ local slotPositions = {-160,0,160};
 local lastBustshotFilename=nil;
 // only applies for the next message
 local nextNameId=nil;
+local nextMsgR=nil;
+local nextMsgG;
+local nextMsgB;
+local nextDropshadowR=nil;
+local nextDropshadowG;
+local nextDropshadowB;
 
 // For manual script mode
 function main()
@@ -109,6 +115,8 @@ function positionBust(args)
 	  lastBustshotFilename=nil;
    end
 end
+function fadeToBlack()
+end
 /////////////////////
 // Actual commands
 /////////////////////
@@ -147,12 +155,28 @@ function scriptShowDialogue(args)
    else // nvl mode
 	  _words = (_words .. "\n")
    end
+   if (nextMsgR~=nil) then
+	  _words = string.format("<color=#%02X%02X%02X>%s</color>",nextMsgR,nextMsgG,nextMsgB,_words)
+	  nextMsgR=nil;
+   end
+   if (nextDropshadowR~=nil) then
+	  setDropshadowColor(nextDropshadowR,nextDropshadowG,nextDropshadowB);
+	  nextDropshadowR=nil;
+   else
+	  setDropshadowColor(0,0,0);
+   end
    OutputLine(nil,nil,nextNameId,_words,Line_Normal);
    nextNameId=nil;
 end
 function setTextColor(args)
-   if (args[1]==0) then
-	  // r = args[2]
+   if (args[1]==0) then // text color
+	  nextMsgR=args[2];
+	  nextMsgG=args[3];
+	  nextMsgB=args[4];
+   elseif (args[1]==1) then // dropshadow color
+	  nextDropshadowR=args[2];
+	  nextDropshadowG=args[3];
+	  nextDropshadowB=args[4];
    end
 end
 function goodPlayVoice(args)
@@ -258,7 +282,7 @@ dynamicAdvBoxHeight(0)
 textOnlyOverBackground(1)
 
 // setup adv name info
-setADVNameSupport(2);
+setADVNameSupport(1);
 loadImageNameSheet("NAME.PNG");
 // manual
 defineImageName(0,27,3,90,32);
@@ -276,4 +300,4 @@ advboxHeight(scalePixels(136,1))
 setADVNameImageHeight(scalePixels(25,1))
 // (8/600)*480
 setTextboxTopPad(scalePixels(6,1))
-
+setTextboxBottomPad(scalePixels(6,1))

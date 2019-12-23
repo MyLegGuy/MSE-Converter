@@ -129,9 +129,12 @@ namespace Petals{
 				short _numArgBytes = reader.ReadInt16();
 				long _startPos = reader.BaseStream.Position;
 				long _destPos=_startPos+_numArgBytes;			
-				while(reader.BaseStream.Position<_destPos){
+				for(int i=0;reader.BaseStream.Position<_destPos;++i){
 					Object _lastRead = readArg(reader,reader.ReadByte());
 					appendArg(w,_lastRead);
+					if (_id==0x7DE && i==2){
+						GraphicsConverter.splitChoiceGraphic(Path.Combine(Options.extractedImagesLocation,(string)_lastRead)+".png");
+					}
 				}
 				endCommand(w);
 				if (reader.BaseStream.Position!=_destPos){
