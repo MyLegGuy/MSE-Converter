@@ -86,6 +86,7 @@ function fixString(curString)
    curString = string.gsub(curString,"\xc2\x81\x76",'" '); // right hook bracket
    curString = string.gsub(curString,"\xc2\x81\x99",'☆'); // star
    curString = string.gsub(curString,"\xc2\x81\xf4",'♪'); // music note
+   curString = string.gsub(curString,"\xc2\x81\xc3\xb4",'♪'); // music note
    return curString;
 end
 // if it is not one of these, it is ignored
@@ -150,11 +151,6 @@ function goodPlayBGM(args)
 end
 function scriptShowDialogue(args)
    local _words = fixString(args[4]);
-   if (getTextDisplayMode()==TEXTMODE_ADV) then
-		ClearMessage();
-   else // nvl mode
-	  _words = (_words .. "\n")
-   end
    if (nextMsgR~=nil) then
 	  _words = string.format("<color=#%02X%02X%02X>%s</color>",nextMsgR,nextMsgG,nextMsgB,_words)
 	  nextMsgR=nil;
@@ -164,6 +160,11 @@ function scriptShowDialogue(args)
 	  nextDropshadowR=nil;
    else
 	  setDropshadowColor(0,0,0);
+   end
+   if (getTextDisplayMode()==TEXTMODE_ADV) then
+		ClearMessage();
+   else // nvl mode
+	  _words = (_words .. "\n")
    end
    OutputLine(nil,nil,nextNameId,_words,Line_Normal);
    nextNameId=nil;
